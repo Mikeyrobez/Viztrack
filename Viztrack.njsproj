@@ -33,7 +33,7 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="app.js" />
-    <Content Include="Controllers\index.js">
+    <Content Include="Controllers\landing.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="routes\index.js" />
@@ -41,7 +41,7 @@
     <Content Include="package.json" />
     <Content Include="public\stylesheets\main.css" />
     <Content Include="README.md" />
-    <Content Include="views\index.pug" />
+    <Content Include="views\landing.pug" />
     <Content Include="views\layout.pug" />
     <Content Include="views\error.pug" />
   </ItemGroup>
