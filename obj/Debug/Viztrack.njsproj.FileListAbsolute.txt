@@ -1,0 +1,3 @@
+C:\dev\Viztrack\Viztrack\obj\Debug\Viztrack.njsprojAssemblyReference.cache
+C:\dev\Viztrack\Viztrack\obj\Debug\Viztrack.njsproj.CoreCompileInputs.cache
+C:\dev\Viztrack\Viztrack\bin\Microsoft.NodejsTools.WebRole.dll
