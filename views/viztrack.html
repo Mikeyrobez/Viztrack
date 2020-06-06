@@ -51,11 +51,12 @@
 
     <script>
         /////////////////test global variables/////////////////////////////
-        var chrom1 = new Chromosome(0, { x: 0, y: 0 });
-        var chrom2 = new Chromosome(0, { x: 100, y: 0 });
-        chromosomes = [chrom1, chrom2];
+        //var chrom1 = new Chromosome(0, { x: 0, y: 0 });
+        //var chrom2 = new Chromosome(0, { x: 100, y: 0 });
+        //chromosomes = [chrom1, chrom2];
 
         var genome1 = new Genome(5);
+        
         //////////////////////////////////////////////////////////////
 
 
@@ -64,8 +65,10 @@
             var context = canvas.getContext('2d');
             context.clearRect(0, 0, canvas.width, canvas.height); ////////Needed to refresh the screen
 
-            chrom1.drawChromosome(scale, windowOrigin);
-            chrom2.drawChromosome(scale,windowOrigin);
+            //chrom1.drawChromosome(scale, windowOrigin);
+            //chrom2.drawChromosome(scale, windowOrigin);
+
+            genome1.drawGenome(scale,windowOrigin);
         }
 
         ///////////////////////////////////////////////////////////
@@ -99,6 +102,7 @@
             ///////////////////////Window Vars/////////////////////////////////////////////
             /////////////////////////////////////////////////////////////
             var canvas = document.getElementById("myCanvas");
+            genome1.initChrom();
 
             var translatePos = {
                 x: canvas.width / 2,
@@ -131,7 +135,7 @@
                 translatePos.x = mousex - ((mousex - translatePos.x) * zoom);
                 translatePos.y = mousey - ((mousey - translatePos.y) * zoom);
                 ///////////////now update scale and draw\
-                updateAll(chromosomes, {x: 0,y: 0},zoom); //////////calls the update for all chroms/grabbable objects?
+                updateAll(genome1.chromosomes, {x: 0,y: 0},zoom); //////////calls the update for all chroms/grabbable objects?
                 scale -= (wheel * scaleMultiplier);//*= zoom;       ///////update the scale with new scaling
                 draw(scale, translatePos);          ///////final draw call after zooming
             });
@@ -140,7 +144,7 @@
                 mouseDown = true;
                 startDragOffset.x = evt.clientX - translatePos.x;
                 startDragOffset.y = evt.clientY - translatePos.y;
-                grabbed = whichGrabbed(chromosomes, translatePos,scale);
+                grabbed = whichGrabbed(genome1.chromosomes, translatePos,scale);
                 if (grabbed) { //////////checks if mouse down over a chromosome
                     elementGrabbed = true;
                     grabbed.highlightOn();

@@ -3,31 +3,27 @@ class Genome {
     //////////////////constructor takes a new genome with chroms of x length
     constructor(numChrom) {
         this.numChrom = numChrom;
-        
-        this.chromosomes = function(numChrom) {
-            var canvas = document.getElementById('myCanvas');
-            var padding = 100;                                  /////////Pad so that there is 50 px on either side of each chrom
-            var dist = (canvas.width - padding) / numChrom;     /////////dist between each chrom
-            var insertPos = (padding / 2) - (canvas.width / 2);
-            var chromosomes = [];                               /////////initialize array of chromosomes
-            var defaultLength = 0;                              /////////will change later when start adding chroms of diff length (maybe relative?)
-            for (i = 0; i < numChrom; i++) {
-                chromosomes.push(new Chromosome(defaultLength, { x: (insertPos + dist), y: 0 }));
-            }
-        };
     }
-    
-    //getChromosomes(numChrom) {
-    //    var canvas = document.getElementById('myCanvas');
-    //    var padding = 100;                                  /////////Pad so that there is 50 px on either side of each chrom
-    //    var dist = (canvas.width - padding) / numChrom;     /////////dist between each chrom
-    //    var insertPos = (padding / 2) - (canvas.width/2); 
-    //    var chromosomes = [];                               /////////initialize array of chromosomes
-    //    var defaultLength = 0;                              /////////will change later when start adding chroms of diff length (maybe relative?)
-    //    for (i = 0; i < numChrom; i++) {
-    //        chromosomes.push(new Chromosome(defaultLength, { x: (insertPos + dist), y: 0 }));
-    //    }
-    //}
+
+    chromosomes = [];       ////////initialize empty array of chromosomes
+    centPos = 0.45;
+    initChrom() {
+        var canvas = document.getElementById('myCanvas');
+        var padding = 100;                                  /////////Pad so that there is 50 px on either side of each chrom
+        var dist = (canvas.width - padding) / this.numChrom;     /////////dist between each chrom
+        var insertPos = (padding / 2) - (canvas.width / 2);
+        var defaultLength = 0;                              /////////will change later when start adding chroms of diff length (maybe relative?)
+        for (var i = 0; i < this.numChrom; i++) {
+            this.chromosomes.push(new Chromosome(defaultLength, { x: insertPos, y: 0 })); ////push to chromosome array
+            insertPos += dist;
+        }
+    };
+
+    drawGenome(scale,windowOrigin) {
+        for (var i = 0; i < this.numChrom; i++) {
+            this.chromosomes[i].drawChromosome(scale, windowOrigin,this.centPos);
+        }
+    }
 }
 
 class Chromosome {
@@ -39,7 +35,7 @@ class Chromosome {
 
 
     height = 250;   /////////hieght, will make this adaptable to the relative length of the chromosome
-    width = 50;
+    width = 35;
     highlight = false;
 
     ///////////////////////Check function to see if over bounding box
@@ -67,13 +63,13 @@ class Chromosome {
     }
 
     highlightOff() {
-        console.log('turn off highlight');
         this.highlight = false;
     }
 
     //////////////////////Draw function for ideogram
-    drawChromosome(scale, windowOrigin) {
+    drawChromosome(scale, windowOrigin, centPos) {
         var relativePos = { x: this.xPos + windowOrigin.x, y: this.yPos + windowOrigin.y };
-        drawIdeogram(scale, relativePos, this.height, this.width, this.highlight);
+        drawIdeogram(scale, relativePos, this.height, this.width, centPos, this.highlight);
     } 
+
 }
