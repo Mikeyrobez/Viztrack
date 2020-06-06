@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Viztrack</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        canvas {
+            background: #ADD8E6;
+            display: block;
+            margin: 0 auto;
+        }
+
+        body {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        #wrapper {
+            position: relative;
+            border: 1px solid #9C9898;
+            width: 800px;
+            height: 800px;
+        }
+
+        #buttonWrapper {
+            position: absolute;
+            width: 30px;
+            top: 2px;
+            right: 2px;
+        }
+
+        #draggableElement {
+            position: absolute;
+            
+        }
+
+        input[type = "button"] {
+            padding: 5px;
+            width: 30px;
+            margin: 0px 0px 2px 0px;
+        }
+    </style>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js"></script>
+    <script src="/javascripts/Ideogram.js"></script>
+    <script src="/javascripts/Genome.js"></script>
+
+    <script>
+        /////////////////test global variables/////////////////////////////
+        var chrom1 = new Chromosome(0, { x: 0, y: 0 });
+        var chrom2 = new Chromosome(0, { x: 100, y: 0 });
+        chromosomes = [chrom1, chrom2];
+
+        var genome1 = new Genome(5);
+        //////////////////////////////////////////////////////////////
+
+
+        function draw(scale,windowOrigin) {
+            var canvas = document.getElementById('myCanvas');
+            var context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height); ////////Needed to refresh the screen
+
+            chrom1.drawChromosome(scale, windowOrigin);
+            chrom2.drawChromosome(scale,windowOrigin);
+        }
+
+        ///////////////////////////////////////////////////////////
+        function whichGrabbed(chromlist,windowOrigin,scale) {
+            var canvas = document.getElementById("myCanvas");
+            mousex = event.pageX;//(event.clientX - canvas.offsetLeft)/scale; ///////pageX works better when using scal
+            mousey = event.pageY;//(event.clientY - canvas.offsetTop)/scale;
+            var check = false;
+            for (i = 0; i < chromlist.length; i++) {
+                check = chromlist[i].check(mousex, mousey, windowOrigin);
+                if (check) { return chromlist[i]; }
+            }
+
+            return null;
+        }
+
+        function updateAll(chromlist, movePos = { x: 0, y: 0 }, zoom = 1) {
+            for (i = 0; i < chromlist.length; i++) {
+                chromlist[i].update(movePos.x,movePos.y,zoom);
+            }
+        }
+
+        function updateGrabbed(grabbed, movePos = {x: 0,y: 0}, zoom = 1) {
+            grabbed.update(movePos.x, movePos.y, zoom);
+        }
+
+        ///////////////Window onload will activate after the doc loads so any html objects will be recognized
+        window.onload = function () {
+            console.log("Window initialized");
+            ///////////////////////////////////////////////////////////////////////////////////
+            ///////////////////////Window Vars/////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////
+            var canvas = document.getElementById("myCanvas");
+
+            var translatePos = {
+                x: canvas.width / 2,
+                y: canvas.height / 2
+            };
+            var movePos = {
+                x: canvas.width / 2,
+                y: canvas.height / 2
+            };
+            var scale = 1.0;
+            var scaleMultiplier = 0.2;
+            var startDragOffset = {};
+            var startPos = {};
+            var mouseDown = false;
+            var elementGrabbed = false;
+            var grabbed = null;
+            ///////////////////////////////////////////////////////////////
+
+            //////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////Window Listeners/////////////////////////////////////////////
+            ////////////////////////////// add zoom button for mouse scroll///////////////////////
+            canvas.addEventListener("mousewheel", function (evt) {
+                var mousex = event.clientX - canvas.offsetLeft; ///////mouse pos
+                var mousey = event.clientY - canvas.offsetTop;
+                var wheel = evt.wheelDelta < 0 ? 1 : -1;        ///////wheel delta + or -
+                var zoom = Math.exp(-wheel * scaleMultiplier);  ///////zoom factor is + or - scale multiplier ////needs another - to scroll up for zoom 
+
+                ////////////to zoom in on mouse we need to change the origin to the proportion of the distance 
+                ////////////between mouse and origin with new scale. so essentially (mx1 - tx1) * scale1 = (mx1 - tx2) * scale2 
+                translatePos.x = mousex - ((mousex - translatePos.x) * zoom);
+                translatePos.y = mousey - ((mousey - translatePos.y) * zoom);
+                ///////////////now update scale and draw\
+                updateAll(chromosomes, {x: 0,y: 0},zoom); //////////calls the update for all chroms/grabbable objects?
+                scale -= (wheel * scaleMultiplier);//*= zoom;       ///////update the scale with new scaling
+                draw(scale, translatePos);          ///////final draw call after zooming
+            });
+            ///////////////////Event listener for mouse, needed to drag/pan around window//////////////
+            canvas.addEventListener("mousedown", function (evt) {
+                mouseDown = true;
+                startDragOffset.x = evt.clientX - translatePos.x;
+                startDragOffset.y = evt.clientY - translatePos.y;
+                grabbed = whichGrabbed(chromosomes, translatePos,scale);
+                if (grabbed) { //////////checks if mouse down over a chromosome
+                    elementGrabbed = true;
+                    grabbed.highlightOn();
+                    startPos.x = evt.clientX - canvas.offsetLeft; ////////track the distance of drag
+                    startPos.y = evt.clientY - canvas.offsetTop;
+                }
+            });
+
+            canvas.addEventListener("mouseup", function (evt) {
+                mouseDown = false;
+                if (elementGrabbed) { grabbed.highlightOff(); }
+                elementGrabbed = false;
+                grabbed = null;
+                draw(scale, translatePos);
+            });
+
+            canvas.addEventListener("mouseover", function (evt) {
+                mouseDown = false;
+            });
+
+            canvas.addEventListener("mouseout", function (evt) {
+                mouseDown = false;
+            });
+
+            canvas.addEventListener("mousemove", function (evt) {
+                if (mouseDown & !elementGrabbed) {
+                    translatePos.x = (evt.clientX - startDragOffset.x);
+                    translatePos.y = (evt.clientY - startDragOffset.y);
+                    draw(scale, translatePos);
+                } else if (mouseDown & elementGrabbed) {
+                    movePos.x = (evt.clientX - canvas.offsetLeft - startPos.x);
+                    movePos.y = (evt.clientY - canvas.offsetTop - startPos.y);
+                    updateGrabbed(grabbed,movePos);
+                    draw(scale, translatePos);
+                    startPos.x = evt.clientX - canvas.offsetLeft;
+                    startPos.y = evt.clientY - canvas.offsetTop;
+                }
+
+            });
+            ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            /////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////Genome Object listner///////////////////////////////
+            ///////////////////////////////////////////////////////////
+
+
+            ////////////////////////////////////////////////////////////
+
+            draw(scale, translatePos);/////////Initial draw call
+        }
+        
+    </script>
+
+    <script> ////////Apparently the jQuery has to be in its own script or does not work
+        jQuery(document).ready(function () {  ////////updates the "status" with mouse x,y pos
+            $("#wrapper").mousemove(function (e) {
+                $('#status').html(e.pageX + ', ' + e.pageY);
+            });
+        })
+    </script>
+
+</head>
+<body onmousedown="return false;">
+    Viztrack V0.1.0
+    <div id="wrapper">
+        <canvas id="myCanvas" width="800" height="800"></canvas>
+        <div id="draggableElement"></div>
+    </div>
+    <h2 id="status">
+        0, 0
+    </h2>
+
+</body>
+</html>
+
+

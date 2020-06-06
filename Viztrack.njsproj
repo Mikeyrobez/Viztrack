@@ -36,6 +36,18 @@
     <Content Include="Controllers\landing.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="Controllers\vistrack.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="Page1.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="public\javascripts\Ideogram.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="public\javascripts\InteractiveWindow.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="routes\index.js" />
     <Content Include="routes\users.js" />
     <Content Include="package.json" />
@@ -44,6 +56,12 @@
     <Content Include="views\landing.pug" />
     <Content Include="views\layout.pug" />
     <Content Include="views\error.pug" />
+    <Content Include="views\viztrack.html">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="views\viztrack.pug">
+      <SubType>Code</SubType>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Controllers\" />

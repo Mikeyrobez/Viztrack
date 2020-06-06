@@ -2,7 +2,9 @@ extends layout
 
 block content
   h1= title
-  p Welcome to #{title}
-  form(action="/", method="POST")
-    input(name ="lead_email", type="email",placeholder="Enter your email address")
-    button(type="submit") Submit
+  p Click below to go to Viztrack
+  //////Button to redirect to viztrack
+  //button(name = "redirect_Viztrack", type="submit", formmethod="POST") Viztrack
+  form(method="POST")
+    input(name ="redirect_Viztrack", type="text",placeholder="")
+    button(type="submit") Viztrack
