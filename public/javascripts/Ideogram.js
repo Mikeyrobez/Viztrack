@@ -80,8 +80,10 @@ function drawIdeogram(scale, translatePos, height, width, centPos, highlight = f
     /////////need to cut up the avail width and height to make a thing in it
     context.save()
     context.translate(translatePos.x, translatePos.y); //////////Translate entire context to there
+
+    //drawBorderedRect(context, -5, -5, width + 10, height + 10, '#FF0000');           ////////////Hitbox representation
     drawBorderedRect(context, 0, 0, width, pYend, borderColor);                /////p arm
-    drawBorderedRect(context, 0, qYstart, width, height, borderColor);         /////q arm
+    drawBorderedRect(context, 0, qYstart, width, (height - qYstart), borderColor);         /////q arm
     drawBorderedCircle(context, centX, centY, centRadius, borderColor );      //////Draw a circle that is .5*width under tPos.x+height and 
     
     context.restore();

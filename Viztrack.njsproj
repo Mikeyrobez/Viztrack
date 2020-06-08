@@ -42,6 +42,17 @@
     <Content Include="Page1.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="public\data\sampleGenome.bed">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="public\data\s_cerevisiae_genome.bed">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="public\images\Hobbes.jpeg" />
+    <Content Include="public\javascripts\Genome.js" />
+    <Content Include="public\javascripts\GenomeReader.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="public\javascripts\Ideogram.js">
       <SubType>Code</SubType>
     </Content>
@@ -68,6 +79,7 @@
     <Folder Include="public\" />
     <Folder Include="public\images\" />
     <Folder Include="public\javascripts\" />
+    <Folder Include="public\data\" />
     <Folder Include="public\stylesheets\" />
     <Folder Include="routes\" />
     <Folder Include="views\" />

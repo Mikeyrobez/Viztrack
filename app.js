@@ -5,7 +5,8 @@ var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+var bodyParser = require('body-parser')
+var requirejs = require('requirejs');
 
 ///////////////Route Variables///////////////////
 var routes = require('./routes/index');   /////////routes the / call to index.js
@@ -27,7 +28,12 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+//app.use(express.static(path.join(__dirname, 'public')));        ////////allows us to access javascripts from html
+//////////////////////////require js config, do not use for any modules in node_modules/
+requirejs.config({
+    noneRequire: require
+});
+
 ////////////////////////////////////////////////////////////////
 
 ///////////////Set the router//////////////////////////////

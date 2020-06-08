@@ -36,7 +36,6 @@
 
         #draggableElement {
             position: absolute;
-            
         }
 
         input[type = "button"] {
@@ -48,31 +47,27 @@
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js"></script>
     <script src="/javascripts/Ideogram.js"></script>
     <script src="/javascripts/Genome.js"></script>
+    <script src="/javascripts/GenomeReader.js"></script>
 
     <script>
-        /////////////////test global variables/////////////////////////////
-        //var chrom1 = new Chromosome(0, { x: 0, y: 0 });
-        //var chrom2 = new Chromosome(0, { x: 100, y: 0 });
-        //chromosomes = [chrom1, chrom2];
-
-        var genome1 = new Genome(5);
+        /////////////////test global variables///////////////////////
+        //var genome1 = new Genome(5);
+        var genome2 = new Genome();
         
         //////////////////////////////////////////////////////////////
 
-
-        function draw(scale,windowOrigin) {
+        ////////////////////////////////////////////////////////////
+        //////////////////Functions/////////////////////////////////
+        /////////////////////////////////////////////////////////////
+        function draw(scale, windowOrigin) {
             var canvas = document.getElementById('myCanvas');
             var context = canvas.getContext('2d');
             context.clearRect(0, 0, canvas.width, canvas.height); ////////Needed to refresh the screen
 
-            //chrom1.drawChromosome(scale, windowOrigin);
-            //chrom2.drawChromosome(scale, windowOrigin);
-
-            genome1.drawGenome(scale,windowOrigin);
+            genome2.drawGenome(scale, windowOrigin);
         }
 
-        ///////////////////////////////////////////////////////////
-        function whichGrabbed(chromlist,windowOrigin,scale) {
+        function whichGrabbed(chromlist, windowOrigin, scale) {
             var canvas = document.getElementById("myCanvas");
             mousex = event.pageX;//(event.clientX - canvas.offsetLeft)/scale; ///////pageX works better when using scal
             mousey = event.pageY;//(event.clientY - canvas.offsetTop)/scale;
@@ -87,13 +82,15 @@
 
         function updateAll(chromlist, movePos = { x: 0, y: 0 }, zoom = 1) {
             for (i = 0; i < chromlist.length; i++) {
-                chromlist[i].update(movePos.x,movePos.y,zoom);
+                chromlist[i].update(movePos.x, movePos.y, zoom);
             }
         }
 
-        function updateGrabbed(grabbed, movePos = {x: 0,y: 0}, zoom = 1) {
+        function updateGrabbed(grabbed, movePos = { x: 0, y: 0 }, zoom = 1) {
             grabbed.update(movePos.x, movePos.y, zoom);
         }
+        /////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////
 
         ///////////////Window onload will activate after the doc loads so any html objects will be recognized
         window.onload = function () {
@@ -102,7 +99,25 @@
             ///////////////////////Window Vars/////////////////////////////////////////////
             /////////////////////////////////////////////////////////////
             var canvas = document.getElementById("myCanvas");
-            genome1.initChrom();
+            ///genome1.initChrom();
+
+            //genome2.genomeFromBed('/data/sampleGenome.bed'); //////////anything that requires like canvas needs to go here for whatever reason
+            genome2.genomeFromBed('/data/s_cerevisiae_genome.bed');
+            //var bed = readFile('/data/sampleGenome.bed');
+            //var bedData = bed.responseText;
+
+
+            //var genomeBed = bedToJSON(bedData);
+
+            //var bed = new File(['bed'], '/data/sampleGenome.bed'); /////this only works for with an input file in html
+            //console.log('size=' + bed.size);
+            //console.log('type=' + bed.type);
+            //console.log('name=' + bed.name);
+            //var reader = new FileReader();
+            //reader.addEventListener('load', function () {
+            //    document.getElementById('file').innerText = this.result;
+            //});
+            //reader.readAsText(bed);
 
             var translatePos = {
                 x: canvas.width / 2,
@@ -128,14 +143,14 @@
                 var mousex = event.clientX - canvas.offsetLeft; ///////mouse pos
                 var mousey = event.clientY - canvas.offsetTop;
                 var wheel = evt.wheelDelta < 0 ? 1 : -1;        ///////wheel delta + or -
-                var zoom = Math.exp(-wheel * scaleMultiplier);  ///////zoom factor is + or - scale multiplier ////needs another - to scroll up for zoom 
+                var zoom = Math.exp(-wheel * scaleMultiplier);  ///////zoom factor is + or - scale multiplier ////needs another - to scroll up for zoom
 
-                ////////////to zoom in on mouse we need to change the origin to the proportion of the distance 
-                ////////////between mouse and origin with new scale. so essentially (mx1 - tx1) * scale1 = (mx1 - tx2) * scale2 
+                ////////////to zoom in on mouse we need to change the origin to the proportion of the distance
+                ////////////between mouse and origin with new scale. so essentially (mx1 - tx1) * scale1 = (mx1 - tx2) * scale2
                 translatePos.x = mousex - ((mousex - translatePos.x) * zoom);
                 translatePos.y = mousey - ((mousey - translatePos.y) * zoom);
                 ///////////////now update scale and draw\
-                updateAll(genome1.chromosomes, {x: 0,y: 0},zoom); //////////calls the update for all chroms/grabbable objects?
+                updateAll(genome2.chromosomes, { x: 0, y: 0 }, zoom); //////////calls the update for all chroms/grabbable objects?
                 scale -= (wheel * scaleMultiplier);//*= zoom;       ///////update the scale with new scaling
                 draw(scale, translatePos);          ///////final draw call after zooming
             });
@@ -144,7 +159,7 @@
                 mouseDown = true;
                 startDragOffset.x = evt.clientX - translatePos.x;
                 startDragOffset.y = evt.clientY - translatePos.y;
-                grabbed = whichGrabbed(genome1.chromosomes, translatePos,scale);
+                grabbed = whichGrabbed(genome2.chromosomes, translatePos, scale);
                 if (grabbed) { //////////checks if mouse down over a chromosome
                     elementGrabbed = true;
                     grabbed.highlightOn();
@@ -177,7 +192,7 @@
                 } else if (mouseDown & elementGrabbed) {
                     movePos.x = (evt.clientX - canvas.offsetLeft - startPos.x);
                     movePos.y = (evt.clientY - canvas.offsetTop - startPos.y);
-                    updateGrabbed(grabbed,movePos);
+                    updateGrabbed(grabbed, movePos);
                     draw(scale, translatePos);
                     startPos.x = evt.clientX - canvas.offsetLeft;
                     startPos.y = evt.clientY - canvas.offsetTop;
@@ -195,10 +210,11 @@
 
             draw(scale, translatePos);/////////Initial draw call
         }
-        
+
     </script>
 
-    <script> ////////Apparently the jQuery has to be in its own script or does not work
+    <script>
+    ////////Apparently the jQuery has to be in its own script or does not work
         jQuery(document).ready(function () {  ////////updates the "status" with mouse x,y pos
             $("#wrapper").mousemove(function (e) {
                 $('#status').html(e.pageX + ', ' + e.pageY);
