@@ -41,7 +41,6 @@ function select(obj,key,type = 'str') {
         arr.push(tmp);
     }
     return arr;
-
 }
 
 
@@ -95,6 +94,7 @@ function bedToJSON(bedText) {
     //return result; ////test for not using JSON
 }
 
+/////////////taken from http://spareinformatics.blogspot.com/2014/01/converting-gff-files-to-json-in.html
 function gffToJSON(gffText) {
     var lines = gffText.split(/\r\n|\r|\n/g),
         //GFF3 Header Structure

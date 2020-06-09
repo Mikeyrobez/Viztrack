@@ -51,7 +51,7 @@
 
     <script>
         /////////////////test global variables///////////////////////
-        //var genome1 = new Genome(5);
+        //var genome1 = new Genome(30);         /////test larger sized genomes
         var genome2 = new Genome();
         
         //////////////////////////////////////////////////////////////
@@ -64,6 +64,7 @@
             var context = canvas.getContext('2d');
             context.clearRect(0, 0, canvas.width, canvas.height); ////////Needed to refresh the screen
 
+            //genome1.drawGenome(scale,windowOrigin);           //////the test genome
             genome2.drawGenome(scale, windowOrigin);
         }
 
@@ -99,15 +100,12 @@
             ///////////////////////Window Vars/////////////////////////////////////////////
             /////////////////////////////////////////////////////////////
             var canvas = document.getElementById("myCanvas");
-            ///genome1.initChrom();
-
-            //genome2.genomeFromBed('/data/sampleGenome.bed'); //////////anything that requires like canvas needs to go here for whatever reason
+            //genome1.initChrom();              /////Run if the genome is from constructor
             genome2.genomeFromBed('/data/s_cerevisiae_genome.bed');
-            //var bed = readFile('/data/sampleGenome.bed');
-            //var bedData = bed.responseText;
 
-
-            //var genomeBed = bedToJSON(bedData);
+            var file = readFile('/data/Saccharomyces_cerevisiae.R64-1-1.100.gff3');
+            var gff = gffToJSON(file.responseText);
+            console.log(gff);
 
             //var bed = new File(['bed'], '/data/sampleGenome.bed'); /////this only works for with an input file in html
             //console.log('size=' + bed.size);
@@ -199,15 +197,8 @@
                 }
 
             });
-            ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            /////////////////////////////////////////////////////////////////////////////////
-            /////////////////////////Genome Object listner///////////////////////////////
-            ///////////////////////////////////////////////////////////
-
-
-            ////////////////////////////////////////////////////////////
-
+            //////////////////  draw call that is called at the begining
             draw(scale, translatePos);/////////Initial draw call
         }
 

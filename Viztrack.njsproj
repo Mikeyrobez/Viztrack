@@ -42,6 +42,7 @@
     <Content Include="Page1.html">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="public\data\Saccharomyces_cerevisiae.R64-1-1.100.gff3" />
     <Content Include="public\data\sampleGenome.bed">
       <SubType>Code</SubType>
     </Content>

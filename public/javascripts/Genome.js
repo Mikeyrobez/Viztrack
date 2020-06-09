@@ -15,31 +15,36 @@ class Genome {
         var canvas = document.getElementById('myCanvas');
         var file = readFile(f);
         var bed = bedToJSON(file.responseText); ///////Imports the genome Bed file into a json 2d array
-        this.chromNames = select(bed, 'chrom',);
+        this.chromNames = select(bed, 'chrom');
         this.numChrom = bed.length;
-        var lengths = select(bed, 'chromEnd','num'); ///select auto convert to string but num will change it to a number
-        var maxLength = Math.max.apply(Math, lengths);
-        var defaultLength = 400 * (1 - (0.05 * this.numChrom));         ///////////height of ideo based on number of chroms
-        
+        this.chromLengths = select(bed, 'chromEnd','num'); ///select auto convert to string but num will change it to a number
+
+        var root = Math.ceil(Math.sqrt(this.numChrom));         /////////square root for number of chroms will be used for ideo row and col number
+        var maxLength = Math.max.apply(Math, this.chromLengths);
+        var defaultLength = (canvas.height * 0.8 * (1 / root));// * asymp;         ///////////height of ideo based on number of chroms
+        ////////the maxheight wille be .75 of canvas size divided by number of rows
         /////////////////////////// set up number of ideos per row
-        var xdiv = 1;
-        var ydiv = 1;
-        if (this.numChrom > 1 & this.numChrom < 5) { xdiv = 0.5; } else if (this.numChrom >= 5) { xdiv = 1 / Math.ceil(this.numChrom / 2); }
-        if (this.numChrom > 2 & this.numChrom < 13) { ydiv = 0.5; } else if (this.numChrom >= 13) { ydiv = 1 / Math.ceil(this.numChrom / 6); }               /////////for right now there are only two rows on y
-        console.log(ydiv);
-        var x, y, xi, yi, s = (1 / ydiv) - 1, height; 
+                
+        var xdiv = 1 / root;
+        var ydiv = 1 / root;
+        
+        ////////////////Instead we will make things symmetrical using the ceiling of square root of numChrom
+
+        var x, y, xi, yi, s = -1, height,width; 
         //////////////////////////iterate through and create each chromosome object
         for (var i = 0; i < this.numChrom; i++) {
-            if (xi == 0) { s++; }               ////////this works and is more elgent I guess
+                        
             xi = i % (1 / xdiv);                ////////We need to set everytime moves to end of row back to 0
-            yi = s % (1 / ydiv);
+            if (xi == 0) { s++; } 
+            yi = s;//s % (1 / ydiv);
 
             ///////////sets left to -400//////Adds the number of divs/////////////subtract have the div/////////subtract chrom width
-            height = (lengths[i] / maxLength) * defaultLength;
-            x = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2) - ((defaultLength * 0.15) / 2);
-            y = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2) - (defaultLength / 2);
-            //console.log(i, ' : ', s, ' : ', x, ' : ', y, ' : ', xdiv, ' : ', ydiv, ' : ', xi, ' : ',  yi); ///////position debugger
-            this.chromosomes.push(new Chromosome(height, { x: x, y: y })); ////push to chromosome array
+            height = (this.chromLengths[i] / maxLength) * defaultLength;
+            width = height * 0.15;
+            x = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2) - ((height * 0.15) / 2);
+            y = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2) - (height / 2);
+            //console.log(i, ' : ', s, ' : ', x, ' : ', y, ' : ', xdiv, ' : ', ydiv, ' : ', xi, ' : ',  yi);
+            this.chromosomes.push(new Chromosome(this.chromNames[i], width, height, this.chromLengths[i], { x: x, y: y })); ////push to chromosome array
         }
 
     }
@@ -47,23 +52,28 @@ class Genome {
 
     initChrom() { ///////////Need to run this if only put numChrom into constructor
         var canvas = document.getElementById('myCanvas');
-        
-        var defaultLength = 400 * (1 - (0.05 * this.numChrom));        //////For now it just decreases a set size based on numchrom, but will have to make it exponential decrease b/c dont want to go under 0         
-        var xdiv = 1;
-        var ydiv = 1;
-        if (this.numChrom > 1 & this.numChrom < 5) { xdiv = 0.5; } else if (this.numChrom >= 5) { xdiv = 1 / Math.ceil(this.numChrom/2); }
-        if (this.numChrom > 2) { ydiv = 0.5; } else if (this.numChrom >= 12) { ydiv = 1 / Match.ciel(this.numChrom/6); }               /////////for right now there are only two rows on y
-        var x, y, xi, yi, s = (1/ydiv) - 1;                   ///////s is set to 1 because modulo fires right after for loop starts
+        var root = Math.ceil(Math.sqrt(this.numChrom));
+        var defaultLength = (canvas.height * 0.8 * (1 / root));
+        //var xdiv = 1;
+        //var ydiv = 1;
+
+        var xdiv = 1 / root;
+        var ydiv = 1 / root;
+        var width = defaultLength * 0.15;
+        var tmpLength = 10000;
+        //if (this.numChrom > 1 & this.numChrom < 5) { xdiv = 0.5; } else if (this.numChrom >= 5) { xdiv = 1 / Math.ceil(this.numChrom/2); }
+        //if (this.numChrom > 2) { ydiv = 0.5; } else if (this.numChrom >= 12) { ydiv = 1 / Match.ciel(this.numChrom/6); }               /////////for right now there are only two rows on y
+        var x, y, xi, yi, s = - 1,name;                   ///////s is set to 1 because modulo fires right after for loop starts
         for (var i = 0; i < this.numChrom; i++) {
-            if (xi == 0) { s++; }               ////////this works and is more elgent I guess
             xi = i % (1 / xdiv);                ////////We need to set everytime moves to end of row back to 0
+            if (xi == 0) { s++; }               ////////this works and is more elgent I guess
             yi = s % (1 / ydiv);
 
             ///////////sets left to -400//////Adds the number of divs/////////////subtract have the div/////////subtract chrom width
             x = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2) - ((defaultLength * 0.15) / 2);
             y = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2) - (defaultLength / 2); 
             //console.log(i, ' : ', s, ' : ', x, ' : ', y, ' : ', xdiv, ' : ', ydiv, ' : ', xi, ' : ',  yi); ///////position debugger
-            this.chromosomes.push(new Chromosome(defaultLength, { x: x , y: y })); ////push to chromosome array
+            this.chromosomes.push(new Chromosome(('chr' + i), width, defaultLength, tmpLength, { x: x, y: y })); ////push to chromosome array
         }
     }
 
@@ -75,12 +85,13 @@ class Genome {
 }
 
 class Chromosome {
-    constructor(length, chromPos) {
+    constructor(name,width,height,length,chromPos) {
+        this.name = name;
         this.length = length;
         this.xPos = chromPos.x;
         this.yPos = chromPos.y;
-        this.height = length;   //////////For now we will set length to height from default length in genome initChrom
-        this.width = length * 0.11; //////15% of height seems like a good width
+        this.height = height;   //////////For now we will set length to height from default length in genome initChrom
+        this.width = width; //////15% of height seems like a good width
     }
 
 
@@ -118,8 +129,13 @@ class Chromosome {
 
     //////////////////////Draw function for ideogram
     drawChromosome(scale, windowOrigin, centPos) {
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
         var relativePos = { x: this.xPos + windowOrigin.x, y: this.yPos + windowOrigin.y };
-        drawIdeogram(scale, relativePos, this.height, this.width, centPos, this.highlight);
+
+        ctx.font = "20px Arial";
+        ctx.fillText(this.name, relativePos.x, relativePos.y); ////////write chromosome name above ideogram
+        drawIdeogram(scale, relativePos, this.height, this.width, centPos, this.highlight);  ///////draw the ideogram
     } 
 
 }
