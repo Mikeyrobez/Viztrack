@@ -30,7 +30,7 @@ class Genome {
         
         ////////////////Instead we will make things symmetrical using the ceiling of square root of numChrom
 
-        var x, y, xi, yi, s = -1, height,width; 
+        var x, y, xi, yi, s = -1, height,width,divx, divy; 
         //////////////////////////iterate through and create each chromosome object
         for (var i = 0; i < this.numChrom; i++) {
                         
@@ -43,8 +43,11 @@ class Genome {
             width = height * 0.15;
             x = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2) - ((height * 0.15) / 2);
             y = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2) - (height / 2);
+            divx = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2);      ////////these are the x and y center of each division 
+            divy = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2);
+
             //console.log(i, ' : ', s, ' : ', x, ' : ', y, ' : ', xdiv, ' : ', ydiv, ' : ', xi, ' : ',  yi);
-            this.chromosomes.push(new Chromosome(this.chromNames[i], width, height, this.chromLengths[i], { x: x, y: y })); ////push to chromosome array
+            this.chromosomes.push(new Chromosome(this.chromNames[i], width, height, this.chromLengths[i], { x: x, y: y }, {x: divx, y: divy})); ////push to chromosome array
         }
 
     }
@@ -63,7 +66,7 @@ class Genome {
         var tmpLength = 10000;
         //if (this.numChrom > 1 & this.numChrom < 5) { xdiv = 0.5; } else if (this.numChrom >= 5) { xdiv = 1 / Math.ceil(this.numChrom/2); }
         //if (this.numChrom > 2) { ydiv = 0.5; } else if (this.numChrom >= 12) { ydiv = 1 / Match.ciel(this.numChrom/6); }               /////////for right now there are only two rows on y
-        var x, y, xi, yi, s = - 1,name;                   ///////s is set to 1 because modulo fires right after for loop starts
+        var x, y, xi, yi, s = - 1,divx,divy;                   ///////s is set to 1 because modulo fires right after for loop starts
         for (var i = 0; i < this.numChrom; i++) {
             xi = i % (1 / xdiv);                ////////We need to set everytime moves to end of row back to 0
             if (xi == 0) { s++; }               ////////this works and is more elgent I guess
@@ -72,8 +75,17 @@ class Genome {
             ///////////sets left to -400//////Adds the number of divs/////////////subtract have the div/////////subtract chrom width
             x = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2) - ((defaultLength * 0.15) / 2);
             y = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2) - (defaultLength / 2); 
+            divx = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2);      ////////these are the x and y center of each division 
+            divy = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2);
+
             //console.log(i, ' : ', s, ' : ', x, ' : ', y, ' : ', xdiv, ' : ', ydiv, ' : ', xi, ' : ',  yi); ///////position debugger
-            this.chromosomes.push(new Chromosome(('chr' + i), width, defaultLength, tmpLength, { x: x, y: y })); ////push to chromosome array
+            this.chromosomes.push(new Chromosome(('chr' + i), width, defaultLength, tmpLength, { x: x, y: y }, { x: divx, y: divy })); ////push to chromosome array
+        }
+    }
+
+    unHighlight() {
+        for (i = 0; i < this.chromosomes.length; i++) {
+            this.chromosomes[i].highlightOff();
         }
     }
 
@@ -85,19 +97,23 @@ class Genome {
 }
 
 class Chromosome {
-    constructor(name,width,height,length,chromPos) {
+    constructor(name,width,height,length,chromPos,boxPos) {
         this.name = name;
         this.length = length;
         this.xPos = chromPos.x;
         this.yPos = chromPos.y;
         this.height = height;   //////////For now we will set length to height from default length in genome initChrom
         this.width = width; //////15% of height seems like a good width
+        this.boxWindow = { x: boxPos.x, y: boxPos.y, height: height, width: width * 8 }; ///leave it at 8 for now, seems that max before send off screen possibly make dynamic with zoom?
+        this.oboxheight = height;
     }
 
+    
 
     //height = 250;   /////////hieght, will make this adaptable to the relative length of the chromosome
     //width = height * 0.15;//35;
     highlight = false;
+    scale = 1;
 
     ///////////////////////Check function to see if over bounding box
     check(mousex,mousey,windowOrigin) {
@@ -110,13 +126,28 @@ class Chromosome {
         if (mousex > minx & mousex < maxx & mousey > miny & mousey < maxy) { return true; }
     }
 
-    update(movex,movey,zoom) {
+    update(movex,movey, zoom) {
+        var canvas = document.getElementById("myCanvas");
         this.xPos += movex;
         this.yPos += movey;
         this.xPos *= zoom;
         this.yPos *= zoom;
         this.height *= zoom;
         this.width *= zoom;
+        ///////////also do the same for the box
+        this.boxWindow.x += movex;
+        this.boxWindow.y += movey;
+        this.boxWindow.x *= zoom;
+        this.boxWindow.y *= zoom;
+        
+        if (canvas.width > this.boxWindow.width * zoom) {
+            if (this.boxWindow.height * zoom < this.height) {
+                ////////////this works I don't know how but whatever
+            } else {
+                this.boxWindow.height *= zoom;
+                this.boxWindow.width *= zoom;
+            }
+        } 
     }
 
     highlightOn() {
@@ -136,6 +167,15 @@ class Chromosome {
         ctx.font = "20px Arial";
         ctx.fillText(this.name, relativePos.x, relativePos.y); ////////write chromosome name above ideogram
         drawIdeogram(scale, relativePos, this.height, this.width, centPos, this.highlight);  ///////draw the ideogram
+        ///////////////draw the outline of the boxWindow as a test
+        //console.log(this.boxWindow);
+        //ctx.beginPath();
+        ctx.fillStyle = '#000';
+        ctx.strokeRect(this.boxWindow.x - (this.boxWindow.width / 2) + windowOrigin.x, this.boxWindow.y - (this.boxWindow.height / 2) + windowOrigin.y,this.boxWindow.width,this.boxWindow.height);
+        //console.log(this.boxWindow.x - (this.boxWindow.width / 2), ' : ', this.boxWindow.y - (this.boxWindow.height / 2));
+        //ctx.stroke();
+        //ctx.closePath();
+
     } 
 
 }

@@ -68,20 +68,34 @@
             genome2.drawGenome(scale, windowOrigin);
         }
 
-        function whichGrabbed(chromlist, windowOrigin, scale) {
-            var canvas = document.getElementById("myCanvas");
-            mousex = event.pageX;//(event.clientX - canvas.offsetLeft)/scale; ///////pageX works better when using scal
-            mousey = event.pageY;//(event.clientY - canvas.offsetTop)/scale;
+        function whichHover(chromlist, windowOrigin) {
+            mousex = event.clientX;
+            mousey = event.clientY;
             var check = false;
+            
             for (i = 0; i < chromlist.length; i++) {
                 check = chromlist[i].check(mousex, mousey, windowOrigin);
                 if (check) { return chromlist[i]; }
             }
 
+            return null; //////////if we are not hovering we exit with null
+        }
+
+        function whichGrabbed(chromlist, windowOrigin) {
+            mousex = event.pageX;//(event.clientX - canvas.offsetLeft)/scale; ///////pageX works better when using scal
+            mousey = event.pageY;//(event.clientY - canvas.offsetTop)/scale;
+            var check = false;
+            for (i = 0; i < chromlist.length; i++) {
+                chromlist[i].highlightOff();
+                check = chromlist[i].check(mousex, mousey, windowOrigin);
+                if (check) { return chromlist[i]; }
+                
+            }
+
             return null;
         }
 
-        function updateAll(chromlist, movePos = { x: 0, y: 0 }, zoom = 1) {
+        function updateAll(chromlist, movePos = { x: 0, y: 0 },  zoom = 1) {
             for (i = 0; i < chromlist.length; i++) {
                 chromlist[i].update(movePos.x, movePos.y, zoom);
             }
@@ -103,9 +117,9 @@
             //genome1.initChrom();              /////Run if the genome is from constructor
             genome2.genomeFromBed('/data/s_cerevisiae_genome.bed');
 
-            var file = readFile('/data/Saccharomyces_cerevisiae.R64-1-1.100.gff3');
-            var gff = gffToJSON(file.responseText);
-            console.log(gff);
+            //var file = readFile('/data/Saccharomyces_cerevisiae.R64-1-1.100.gff3');
+            //var gff = gffToJSON(file.responseText);
+            //console.log(gff);
 
             //var bed = new File(['bed'], '/data/sampleGenome.bed'); /////this only works for with an input file in html
             //console.log('size=' + bed.size);
@@ -132,6 +146,7 @@
             var mouseDown = false;
             var elementGrabbed = false;
             var grabbed = null;
+            var hover = null;
             ///////////////////////////////////////////////////////////////
 
             //////////////////////////////////////////////////////////////////////////////////////
@@ -148,16 +163,20 @@
                 translatePos.x = mousex - ((mousex - translatePos.x) * zoom);
                 translatePos.y = mousey - ((mousey - translatePos.y) * zoom);
                 ///////////////now update scale and draw\
-                updateAll(genome2.chromosomes, { x: 0, y: 0 }, zoom); //////////calls the update for all chroms/grabbable objects?
                 scale -= (wheel * scaleMultiplier);//*= zoom;       ///////update the scale with new scaling
+                updateAll(genome2.chromosomes, { x: 0, y: 0 }, zoom); //////////calls the update for all chroms/grabbable objects?
+                
                 draw(scale, translatePos);          ///////final draw call after zooming
             });
             ///////////////////Event listener for mouse, needed to drag/pan around window//////////////
+
+
             canvas.addEventListener("mousedown", function (evt) {
                 mouseDown = true;
                 startDragOffset.x = evt.clientX - translatePos.x;
                 startDragOffset.y = evt.clientY - translatePos.y;
-                grabbed = whichGrabbed(genome2.chromosomes, translatePos, scale);
+                /////For now we will disable chroms as grabbable objects because it would be annoying to grab when you really want to pan to another chromosome
+                ///grabbed = whichGrabbed(genome2.chromosomes, translatePos); 
                 if (grabbed) { //////////checks if mouse down over a chromosome
                     elementGrabbed = true;
                     grabbed.highlightOn();
@@ -183,6 +202,11 @@
             });
 
             canvas.addEventListener("mousemove", function (evt) {
+                hover = whichHover(genome2.chromosomes, translatePos); ////need to eventually change to check over all interactable elements or just genomes
+                if (hover) {
+                    hover.highlightOn();
+                } else { genome2.unHighlight(); }/////turns on hightlight on hover, and if no hover unhighlights
+                draw(scale, translatePos); ///////////draw call after hover
                 if (mouseDown & !elementGrabbed) {
                     translatePos.x = (evt.clientX - startDragOffset.x);
                     translatePos.y = (evt.clientY - startDragOffset.y);
