@@ -62,6 +62,7 @@ function bedToJSON(bedText) {
         result = [];
     ///////////Determine the type of BED to use
     if (firstline[0].startsWith('chrom') | firstline[0].startsWith('Chrom')) { isHeader = true; }////////checks if there is a header
+    
     if (isHeader) { header = firstline; n = 1; }
     else if (firstline.length == 3) { header = headers12.slice(0,3); }
     else if (firstline.length == 6) { header = headers12.slice(0,6); }
@@ -80,7 +81,8 @@ function bedToJSON(bedText) {
         obj = {};
         currentline = lines[i].split("\t");
         //Ignore lines starting with metadata
-        if (currentline[0].startsWith('chr') && currentline.length === header.length) {
+        //if (currentline[0].startsWith('chr') && currentline.length === header.length) { ///////doesn't work with mito
+        if (currentline.length === header.length) {
             for (j = 0; j < header.length; j += 1) {
                 obj[header[j]] = currentline[j];
             }
@@ -88,6 +90,7 @@ function bedToJSON(bedText) {
             result.push(obj);
         }
     }
+    
     //Return the JSON string
     //console.log(result);
     return JSON.parse(JSON.stringify(result));
@@ -130,5 +133,5 @@ function gffToJSON(gffText) {
         }
     }
     //Return the JSON string
-    return JSON.stringify(result);
+    return JSON.parse(JSON.stringify(result));  ///////returns as parsed json so that I can query it
 }

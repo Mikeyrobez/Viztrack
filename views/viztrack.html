@@ -46,6 +46,7 @@
     </style>
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js"></script>
     <script src="/javascripts/Ideogram.js"></script>
+    <script src="/javascripts/Tracks.js"></script>
     <script src="/javascripts/Genome.js"></script>
     <script src="/javascripts/GenomeReader.js"></script>
 
@@ -119,7 +120,8 @@
 
             //var file = readFile('/data/Saccharomyces_cerevisiae.R64-1-1.100.gff3');
             //var gff = gffToJSON(file.responseText);
-            //console.log(gff);
+            //console.log(gff[2]["type"]);
+            genome2.addGeneTrackFromGFF('/data/Saccharomyces_cerevisiae.R64-1-1.100.gff3');  ///////read genes from gff3
 
             //var bed = new File(['bed'], '/data/sampleGenome.bed'); /////this only works for with an input file in html
             //console.log('size=' + bed.size);
@@ -160,8 +162,10 @@
 
                 ////////////to zoom in on mouse we need to change the origin to the proportion of the distance
                 ////////////between mouse and origin with new scale. so essentially (mx1 - tx1) * scale1 = (mx1 - tx2) * scale2
-                translatePos.x = mousex - ((mousex - translatePos.x) * zoom);
+
+                translatePos.x = mousex - ((mousex - translatePos.x) * zoom);  ///////maybe later make sticky zoom but cant get it to work now
                 translatePos.y = mousey - ((mousey - translatePos.y) * zoom);
+                
                 ///////////////now update scale and draw\
                 scale -= (wheel * scaleMultiplier);//*= zoom;       ///////update the scale with new scaling
                 updateAll(genome2.chromosomes, { x: 0, y: 0 }, zoom); //////////calls the update for all chroms/grabbable objects?

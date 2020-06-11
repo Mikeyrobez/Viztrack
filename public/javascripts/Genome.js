@@ -6,6 +6,10 @@ class Genome {
     }
 
     chromosomes = [];       ////////initialize empty array of chromosomes
+    tracks = [];            ////////initialize empty array of track type class objects
+    trackNames = [];
+    trackMap = [];
+    trackPos = {};
     defaultcentPos = 0.35;         ////////relative percentage of the p arm to the q arm of the chromosome
     absHeight = 400;
 
@@ -57,15 +61,11 @@ class Genome {
         var canvas = document.getElementById('myCanvas');
         var root = Math.ceil(Math.sqrt(this.numChrom));
         var defaultLength = (canvas.height * 0.8 * (1 / root));
-        //var xdiv = 1;
-        //var ydiv = 1;
 
         var xdiv = 1 / root;
         var ydiv = 1 / root;
         var width = defaultLength * 0.15;
         var tmpLength = 10000;
-        //if (this.numChrom > 1 & this.numChrom < 5) { xdiv = 0.5; } else if (this.numChrom >= 5) { xdiv = 1 / Math.ceil(this.numChrom/2); }
-        //if (this.numChrom > 2) { ydiv = 0.5; } else if (this.numChrom >= 12) { ydiv = 1 / Match.ciel(this.numChrom/6); }               /////////for right now there are only two rows on y
         var x, y, xi, yi, s = - 1,divx,divy;                   ///////s is set to 1 because modulo fires right after for loop starts
         for (var i = 0; i < this.numChrom; i++) {
             xi = i % (1 / xdiv);                ////////We need to set everytime moves to end of row back to 0
@@ -83,6 +83,23 @@ class Genome {
         }
     }
 
+    addGeneTrackFromGFF(f) {
+        var file = readFile(f);
+        var gff = gffToJSON(file.responseText);
+        
+        geneTrack = new geneTrack();
+        geneTrack.trackFromGFF(gff);
+        /////////////we will make a track map here but we need to make it editable from wihtin the application
+        this.trackMap.push({
+            chr1: "I", chr2: "II", chr3: "III", chr4: "IV",
+            chr9: "IX", mito: "Mito", chr5: "V", chr6: "VI",
+            chr7: "VII", chr8: "VIII", chr10: "X", chr11: "XI",
+            chr12: "XII", chr13: "XIII", chr14: "XIV", chr15: "XV", chr16: "XVI"
+        });
+        for (var i = 0; i < this.numChrom; i++) { this.trackPos[this.chromNames[i]] = [0]; }    /////////for now gene track will be position 0 but will eventually have a variable system 
+        this.tracks.push(geneTrack);
+    }
+
     unHighlight() {
         for (i = 0; i < this.chromosomes.length; i++) {
             this.chromosomes[i].highlightOff();
@@ -91,7 +108,7 @@ class Genome {
 
     drawGenome(scale,windowOrigin) {
         for (var i = 0; i < this.numChrom; i++) {
-            this.chromosomes[i].drawChromosome(scale, windowOrigin,this.defaultcentPos);
+            this.chromosomes[i].drawChromosome(scale, windowOrigin,this.defaultcentPos,this.trackPos[this.chromNames[i]]);
         }
     }
 }
@@ -139,7 +156,7 @@ class Chromosome {
         this.boxWindow.y += movey;
         this.boxWindow.x *= zoom;
         this.boxWindow.y *= zoom;
-        
+        /////////This if statement will not change box size to be bigger than canvas (for chroms of diff size)
         if (canvas.width > this.boxWindow.width * zoom) {
             if (this.boxWindow.height * zoom < this.height) {
                 ////////////this works I don't know how but whatever
@@ -148,6 +165,10 @@ class Chromosome {
                 this.boxWindow.width *= zoom;
             }
         } 
+    }
+
+    centerBox() {
+        return { x: this.boxWindow.x, y: this.boxWindow.y };
     }
 
     highlightOn() {
@@ -159,22 +180,41 @@ class Chromosome {
     }
 
     //////////////////////Draw function for ideogram
-    drawChromosome(scale, windowOrigin, centPos) {
+    drawChromosome(scale, windowOrigin, centPos,trackPos) {
         var canvas = document.getElementById("myCanvas");
         var ctx = canvas.getContext("2d");
         var relativePos = { x: this.xPos + windowOrigin.x, y: this.yPos + windowOrigin.y };
 
+        ctx.beginPath();
+        ctx.fillStyle = '#000';
         ctx.font = "20px Arial";
         ctx.fillText(this.name, relativePos.x, relativePos.y); ////////write chromosome name above ideogram
+        ctx.closePath();
+
         drawIdeogram(scale, relativePos, this.height, this.width, centPos, this.highlight);  ///////draw the ideogram
         ///////////////draw the outline of the boxWindow as a test
-        //console.log(this.boxWindow);
-        //ctx.beginPath();
-        ctx.fillStyle = '#000';
-        ctx.strokeRect(this.boxWindow.x - (this.boxWindow.width / 2) + windowOrigin.x, this.boxWindow.y - (this.boxWindow.height / 2) + windowOrigin.y,this.boxWindow.width,this.boxWindow.height);
-        //console.log(this.boxWindow.x - (this.boxWindow.width / 2), ' : ', this.boxWindow.y - (this.boxWindow.height / 2));
-        //ctx.stroke();
-        //ctx.closePath();
+        var boxy = this.boxWindow.y - (this.boxWindow.height / 2) + windowOrigin.y;
+        var boxx = this.boxWindow.x - (this.boxWindow.width / 2) + windowOrigin.x;
+
+        ctx.beginPath();
+        ctx.strokeStyle = '#000';
+        ctx.strokeRect(boxx, boxy,this.boxWindow.width,this.boxWindow.height);
+        ctx.closePath();
+
+        /////////////we should draw the track windows now as well they will be of a certain size and will get more opaque with
+        var tracky = this.boxWindow.y - ((this.boxWindow.height / 2)) + windowOrigin.y;
+        var padding = 20;
+        ////////////maybe we should adapt it to more tracks than size of window allows
+        for (var i = 0; i < trackPos.length; i++) {
+            var trackx = windowOrigin.x + this.boxWindow.x - (this.width / 2) + ((this.width + padding) * trackPos[i]);
+            ctx.beginPath();
+            ctx.globalAlpha = Math.min(1, Math.max(0,1 - (1/scale)));       /////////makes more opaque as we scale
+            ctx.fillStyle = '#3333ff'; ///'#0000ff'; ///pure blue
+            ctx.fillRect(trackx, tracky, this.width, this.boxWindow.height);
+            ctx.globalAlpha = 1.0;
+            ctx.closePath();
+        }
+        
 
     } 
 
