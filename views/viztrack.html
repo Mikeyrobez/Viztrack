@@ -144,11 +144,13 @@
             var scale = 1.0;
             var scaleMultiplier = 0.2;
             var startDragOffset = {};
+            var startDrag = {};
             var startPos = {};
             var mouseDown = false;
             var elementGrabbed = false;
             var grabbed = null;
             var hover = null;
+            var oldhover = null;
             ///////////////////////////////////////////////////////////////
 
             //////////////////////////////////////////////////////////////////////////////////////
@@ -162,15 +164,24 @@
 
                 ////////////to zoom in on mouse we need to change the origin to the proportion of the distance
                 ////////////between mouse and origin with new scale. so essentially (mx1 - tx1) * scale1 = (mx1 - tx2) * scale2
+                if (hover) {
+                    hover.zoomRange(zoom);
+                    draw(scale, translatePos);
+                } else {
 
-                translatePos.x = mousex - ((mousex - translatePos.x) * zoom);  ///////maybe later make sticky zoom but cant get it to work now
-                translatePos.y = mousey - ((mousey - translatePos.y) * zoom);
-                
-                ///////////////now update scale and draw\
-                scale -= (wheel * scaleMultiplier);//*= zoom;       ///////update the scale with new scaling
-                updateAll(genome2.chromosomes, { x: 0, y: 0 }, zoom); //////////calls the update for all chroms/grabbable objects?
-                
-                draw(scale, translatePos);          ///////final draw call after zooming
+                    if (scale - (wheel * scaleMultiplier) > 0.8) {                          //////limits zoom out to 0.8 to prevent breaking
+                        translatePos.x = mousex - ((mousex - translatePos.x) * zoom);  ///////maybe later make sticky zoom but cant get it to work now
+                        translatePos.y = mousey - ((mousey - translatePos.y) * zoom);
+
+                        ///////////////now update scale and draw\
+
+                        scale -= (wheel * scaleMultiplier);//*= zoom;       ///////update the scale with new scaling
+                        updateAll(genome2.chromosomes, { x: 0, y: 0 }, zoom); //////////calls the update for all chroms/grabbable objects?
+
+                        draw(scale, translatePos);          ///////final draw call after zooming
+
+                    }
+                }
             });
             ///////////////////Event listener for mouse, needed to drag/pan around window//////////////
 
@@ -179,6 +190,7 @@
                 mouseDown = true;
                 startDragOffset.x = evt.clientX - translatePos.x;
                 startDragOffset.y = evt.clientY - translatePos.y;
+                
                 /////For now we will disable chroms as grabbable objects because it would be annoying to grab when you really want to pan to another chromosome
                 ///grabbed = whichGrabbed(genome2.chromosomes, translatePos); 
                 if (grabbed) { //////////checks if mouse down over a chromosome
@@ -186,6 +198,10 @@
                     grabbed.highlightOn();
                     startPos.x = evt.clientX - canvas.offsetLeft; ////////track the distance of drag
                     startPos.y = evt.clientY - canvas.offsetTop;
+                }
+                if (hover) {
+                    startDrag.x = evt.clientX;
+                    startDrag.y = evt.clientY;
                 }
             });
 
@@ -207,15 +223,28 @@
 
             canvas.addEventListener("mousemove", function (evt) {
                 hover = whichHover(genome2.chromosomes, translatePos); ////need to eventually change to check over all interactable elements or just genomes
-                if (hover) {
+                if (hover) {        /////turns on hightlight on hover, and if no hover unhighlights
                     hover.highlightOn();
-                } else { genome2.unHighlight(); }/////turns on hightlight on hover, and if no hover unhighlights
-                draw(scale, translatePos); ///////////draw call after hover
-                if (mouseDown & !elementGrabbed) {
+                    oldhover = hover;
+                    if (mouseDown) {
+                        var dragy = (evt.clientY - startDrag.y); /////////now working up and down
+                        hover.dragRange(dragy);
+                        startDrag.x = evt.clientX;
+                        startDrag.y = evt.clientY;
+                    }
+                    draw(scale, translatePos); ///////////draw call after hover
+                } else {
+                    if (oldhover != null) {
+                        oldhover.highlightOff();/////////////if no longer hover, save hover to oldhover turn off highlight and set oldhover back to null
+                        oldhover = null;
+                        draw(scale, translatePos); ///////////draw call after hover
+                    }
+                }
+                if (mouseDown & !elementGrabbed & !hover ) {
                     translatePos.x = (evt.clientX - startDragOffset.x);
                     translatePos.y = (evt.clientY - startDragOffset.y);
                     draw(scale, translatePos);
-                } else if (mouseDown & elementGrabbed) {
+                } else if (mouseDown & elementGrabbed & !hover ) {
                     movePos.x = (evt.clientX - canvas.offsetLeft - startPos.x);
                     movePos.y = (evt.clientY - canvas.offsetTop - startPos.y);
                     updateGrabbed(grabbed, movePos);
@@ -223,7 +252,11 @@
                     startPos.x = evt.clientX - canvas.offsetLeft;
                     startPos.y = evt.clientY - canvas.offsetTop;
                 }
-
+                //if (hover & mouseDown & !elementGrabbed) {
+                //    var dragy = (evt.clientY - startDragOffset.y);
+                //    hover.dragRange(dragy);
+                //    draw(scale, translatePos);
+                //}
             });
 
             //////////////////  draw call that is called at the begining

@@ -104,11 +104,110 @@ class geneTrack extends Track {
             }
         }
         genes['chromNames'] = chromNames;
-        console.log(genes['chromNames']);
         this.genes = genes;
     }
 
-    drawTrack() {
-        /////////This will draw the individual genes
+    drawTrack(chrom, boxWindow, trackPos, trackRange,windowOrigin,scale,chromLength) {
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+        //////for trackPos add or subtrack it * the trackwidth + padding from the windoworigin + boxwindow.x
+        var trackDir;
+        if (trackPos == 0) { trackDir = 0; } else { trackDir = trackPos < 0 ? 1 : -1; } ////////get the direction of padding
+        var trackWidth = (boxWindow.width / 8);
+        var trackLength = (boxWindow.height * 0.9);
+        var relativeBoxy = windowOrigin.y + boxWindow.y; ////////so we dont have to add the windowOrigin each time
+        var relativeBoxx = windowOrigin.x + boxWindow.x + (trackWidth * trackPos) + (trackWidth * 0.1 * trackDir);  //////////trackPos will change the relative x position to be centered on the track
+        var startNumPosy = relativeBoxy - trackLength/2; //////////the top of base box
+        var endNumPosy = relativeBoxy + trackLength/2;   /////////bottom of base box
+        var startNumPosx = relativeBoxx + trackWidth * 0.1;  //////////draw numbers right outside of base box
+        var startLinePosx = relativeBoxx - trackWidth * 0.1;
+        var newLength = trackRange.end - trackRange.start;
+
+        function shortNum(num,resolution) {        ////////small function to abbr the number
+            var tmp;
+            
+            if (num / 1000000 > 1 & resolution > 1000000) { tmp = (Math.floor(num / 100000) / 10) + ' Mb'; } else if (num / 1000 > 1 & resolution > 1000) { tmp = (Math.floor(num / 100) / 10) + ' Kb'; } else { tmp = num; }
+            ///////////divide by 10 times less then divide by 10 again
+            console.log(tmp);
+            return tmp;
+        };
+
+        ctx.beginPath();
+        ctx.globalAlpha = Math.min(1, Math.max(0, 1 - (1 / scale)));
+        ctx.fillStyle = '#000';
+        ctx.lineWidth = 0.5;
+        //////////////////////////////Add number annotations of position on chrom
+        ctx.moveTo(startLinePosx, startNumPosy);
+        ctx.lineTo(startNumPosx, startNumPosy);   /////////top line
+        ctx.stroke();
+
+        ctx.moveTo(startLinePosx, endNumPosy);
+        ctx.lineTo(startNumPosx, endNumPosy);   /////////bottom line
+        ctx.stroke();
+
+        ctx.font = "10px Arial";
+        ctx.fillText(shortNum(trackRange.start,newLength), startNumPosx, startNumPosy); ////////write start number at top of track
+        
+        ctx.fillText(shortNum(trackRange.end,newLength), startNumPosx, endNumPosy); ////////write end range number at bottom of track
+        //////////////////////////////
+        ;///var newLength = trackRange.end - trackRange.start;      /////for now we have it being 100 base boxes but it doesn't feel like it zooms all the way down mayber fix
+        //var zoomedRatio = Math.min(100, Math.max(2, 100 - Math.floor((newLength / chromLength) * 100)));
+        var baseDiv,baseRatio,baseStart,baseHeight;        ////////////////
+        if (newLength > 100000) {
+            baseRatio = newLength / (chromLength - 100000);
+            baseDiv = Math.max(1,5 - (4 * baseRatio)); //////////5 to 1  ///////max should prevent funky stuff
+        } else if (newLength > 10000 & newLength < 100000) {
+            baseRatio = newLength / (100000 - 10000);
+            baseDiv = 10 - (5 * baseRatio); /////////10 to 5
+        } else if (newLength > 100 & newLength < 10000) {
+            baseRatio = newLength / (10000 - 1000);
+            baseDiv = 100 - (90 * baseRatio); /////100 to 10
+        } else if (newLength == 100) {
+            baseDiv = 100;
+        } 
+
+        var baseboxWidth = trackWidth * 0.02; //////basebox width is 0.05 of the trackwidth, maybe make it get bigger with zoom to fit more overlapping genes
+        var divHeight = trackLength * (1 / baseDiv);
+        var startBaseboxx = relativeBoxx - baseboxWidth / 2;
+        var startBaseboxy = relativeBoxy - (trackLength / 2) - divHeight + (divHeight * -(trackRange.offset));////start -1 box up and add the box worth of  offset
+        
+        for (var i = 0; i < baseDiv + 2; i++) {     ////////+ 2 because we will be using a drag function that will require an extra div box on bottom and on top to make it appear as if it is moving
+            baseStart = Math.max(startNumPosy,Math.min(endNumPosy, startBaseboxy + (divHeight * i)));    ////////limit start to start num Posy and end to endNumPosy
+            if (baseStart + divHeight > endNumPosy) {   ///////////////////cases for when to stop or start panning track
+                baseHeight = endNumPosy - baseStart;
+            } else {
+                if (startBaseboxy + (divHeight * i) < startNumPosy) {
+                    if (startBaseboxy + (divHeight * i) + divHeight < startNumPosy) {
+                        baseHeight = 0;
+                    } else { baseHeight = (startBaseboxy + (divHeight * (i + 1))) - startNumPosy ; }
+                } else { baseHeight = divHeight; }
+            }
+            ctx.strokeRect(startBaseboxx, baseStart, baseboxWidth, baseHeight);
+            
+        }
+        /////////////draw the positions of 5 ticks to better gauge lengths on tracks
+        var tickLength = trackLength / 6;
+        for (var i = 0; i < 7; i++) {
+            var tickPosy = startNumPosy + (tickLength * i) - (tickLength * trackRange.offset);
+            var tickNum = Math.floor(trackRange.start + (newLength / 5) * i);
+            if (i % 2 == 0) {
+                var tickStart = relativeBoxx - trackWidth * 0.075;
+                var tickEnd = relativeBoxx + trackWidth * 0.075;
+            } else {
+                var tickStart = relativeBoxx - trackWidth * 0.05;
+                var tickEnd = relativeBoxx + trackWidth * 0.05;
+            }
+            if (tickPosy <= startNumPosy || tickPosy >= endNumPosy) { } else {
+                ctx.fillText(shortNum(tickNum, newLength), startNumPosx, tickPosy);
+                ctx.moveTo(tickStart, tickPosy);
+                ctx.lineTo(tickEnd, tickPosy);
+                ctx.stroke();
+            }
+        }
+        ////if (chrom == "IV") { console.log(baseStart + divHeight, ' : ', endNumPosy); }
+
+        ctx.lineWidth = 0.5;
+        ctx.globalAlpha = 1;
+        ctx.closePath();
     }
 }

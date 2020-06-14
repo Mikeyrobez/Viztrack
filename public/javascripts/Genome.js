@@ -52,6 +52,7 @@ class Genome {
 
             //console.log(i, ' : ', s, ' : ', x, ' : ', y, ' : ', xdiv, ' : ', ydiv, ' : ', xi, ' : ',  yi);
             this.chromosomes.push(new Chromosome(this.chromNames[i], width, height, this.chromLengths[i], { x: x, y: y }, {x: divx, y: divy})); ////push to chromosome array
+            
         }
 
     }
@@ -100,17 +101,23 @@ class Genome {
         this.tracks.push(geneTrack);
     }
 
-    unHighlight() {
-        for (i = 0; i < this.chromosomes.length; i++) {
-            this.chromosomes[i].highlightOff();
+
+    drawGenome(scale,windowOrigin) {
+        var chromName, trackName,boxWindow,trackPos,trackRange;
+        for (var i = 0; i < this.numChrom; i++) {
+            chromName = this.chromNames[i];
+            boxWindow = this.chromosomes[i].boxWindow;
+            trackRange = this.chromosomes[i].trackRange;
+            this.chromosomes[i].drawChromosome(scale, windowOrigin, this.defaultcentPos, this.trackPos[this.chromNames[i]]);
+            for (var x = 0; x < this.tracks.length; x++) {
+                trackPos = this.trackPos[chromName][x];
+                trackName = this.trackMap[x][chromName];
+                this.tracks[x].drawTrack(trackName, boxWindow, trackPos,trackRange,windowOrigin,scale,this.chromLengths[i]);
+            }
         }
     }
 
-    drawGenome(scale,windowOrigin) {
-        for (var i = 0; i < this.numChrom; i++) {
-            this.chromosomes[i].drawChromosome(scale, windowOrigin,this.defaultcentPos,this.trackPos[this.chromNames[i]]);
-        }
-    }
+
 }
 
 class Chromosome {
@@ -123,14 +130,15 @@ class Chromosome {
         this.width = width; //////15% of height seems like a good width
         this.boxWindow = { x: boxPos.x, y: boxPos.y, height: height, width: width * 8 }; ///leave it at 8 for now, seems that max before send off screen possibly make dynamic with zoom?
         this.oboxheight = height;
+        this.chromRange = { start: 0, end: length };
+        this.trackRange = { start: 0, end: length, offset: 0 };
     }
 
     
 
-    //height = 250;   /////////hieght, will make this adaptable to the relative length of the chromosome
-    //width = height * 0.15;//35;
     highlight = false;
     scale = 1;
+    dragging = false; ////for now not use but kinda annoying when you drag off chrom and it jumps
 
     ///////////////////////Check function to see if over bounding box
     check(mousex,mousey,windowOrigin) {
@@ -156,13 +164,15 @@ class Chromosome {
         this.boxWindow.y += movey;
         this.boxWindow.x *= zoom;
         this.boxWindow.y *= zoom;
+        this.boxWindow.height *= zoom; ////////this will make it so box/track size does not get smaller when over zoomed
+        this.boxWindow.width *= zoom;
         /////////This if statement will not change box size to be bigger than canvas (for chroms of diff size)
         if (canvas.width > this.boxWindow.width * zoom) {
             if (this.boxWindow.height * zoom < this.height) {
                 ////////////this works I don't know how but whatever
             } else {
-                this.boxWindow.height *= zoom;
-                this.boxWindow.width *= zoom;
+                //this.boxWindow.height *= zoom;    /////////This will make it so the box/track gets smaller when over zoomed on chrom
+                //this.boxWindow.width *= zoom;
             }
         } 
     }
@@ -177,6 +187,46 @@ class Chromosome {
 
     highlightOff() {
         this.highlight = false;
+    }
+
+    zoomRange(zoom) {
+        var tmp,newStart,newEnd;
+        var trackLength = this.trackRange.end - this.trackRange.start;
+        var newBumper = (trackLength - (trackLength / zoom)) / 2;
+        if (trackLength == 100 & zoom > 1) {
+            newStart = this.trackRange.start;
+            newEnd = this.trackRange.end;
+        } else {
+            var newStart = Math.max(0, Math.floor(this.trackRange.start + newBumper));
+            var newEnd = Math.max(newStart + 100, Math.min(this.length, Math.floor(this.trackRange.end - newBumper)));
+        }
+        var newLength = newEnd - newStart;
+        if (newLength > this.chromRange.end - this.chromRange.start ) {} else {
+            this.trackRange.start = newStart;
+            this.trackRange.end = newEnd;
+        }
+    }
+
+    dragRange(dragY) {
+        var newLength = this.trackRange.end - this.trackRange.start;
+        var sizeRatio = (newLength / (this.chromRange.end - this.chromRange.start));
+        var speed = 10000 * sizeRatio;////newLength / 10; /////the speed at which we pan  ///////we want it to go slower while less zoomed and faster while more
+        var dragDir = dragY < 0 ? 1 : -1; ///////make negative so that drag goes opposite way
+        
+        var newEnd = Math.floor(this.trackRange.end + speed * dragDir);
+        var newStart = Math.floor(this.trackRange.start + speed * dragDir);
+
+        //////////keep a space between the start and end
+        this.trackRange.start = Math.min(this.chromRange.end - newLength,Math.max(0, newStart));      ///////////////////we cant stop from scrolling when we reach 0 or the end
+        this.trackRange.end = Math.max(this.chromRange.start + newLength, Math.min(this.chromRange.end, newEnd));
+        ///////Now do the offset in increments of 0.2
+        this.trackRange.offset += (0.2 * dragDir);
+        if (this.trackRange.offset < -1) { this.trackRange.offset = 0; }
+        if (this.trackRange.offset > 1) { this.trackRange.offset = 0; }
+        if (this.trackRange.start == 0 & dragDir == -1) { this.trackRange.offset = 0; }
+        if (this.trackRange.end == this.chromRange.end & dragDir == 1) { this.trackRange.offset = 0; }
+        
+        ////console.log(this.trackRange.offset);
     }
 
     //////////////////////Draw function for ideogram
@@ -204,13 +254,22 @@ class Chromosome {
         /////////////we should draw the track windows now as well they will be of a certain size and will get more opaque with
         var tracky = this.boxWindow.y - ((this.boxWindow.height / 2)) + windowOrigin.y;
         var padding = 20;
+        var trackWidth = this.boxWindow.width / 8; //////////For now we just put 8 b/c it fits over chrom well, but we will have to divide it more if more tracks than 8
+        var trackHeight = this.boxWindow.height;
+        var thickness = 2; /////define thickness of track window border
         ////////////maybe we should adapt it to more tracks than size of window allows
+        ///////////need to add lines 
         for (var i = 0; i < trackPos.length; i++) {
-            var trackx = windowOrigin.x + this.boxWindow.x - (this.width / 2) + ((this.width + padding) * trackPos[i]);
+            var trackx = windowOrigin.x + this.boxWindow.x - (trackWidth / 2) + ((trackWidth + padding) * trackPos[i]);
             ctx.beginPath();
             ctx.globalAlpha = Math.min(1, Math.max(0,1 - (1/scale)));       /////////makes more opaque as we scale
-            ctx.fillStyle = '#3333ff'; ///'#0000ff'; ///pure blue
-            ctx.fillRect(trackx, tracky, this.width, this.boxWindow.height);
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(trackx - thickness, tracky - thickness, trackWidth + (thickness * 2), trackHeight + (thickness * 2)); ////draw track border window
+
+            ctx.fillStyle = '#D6DBDF';//'#3333ff'; ///'#0000ff'; ///pure blue
+            ctx.fillRect(trackx, tracky, trackWidth, trackHeight); //////fill track window
+            
             ctx.globalAlpha = 1.0;
             ctx.closePath();
         }
