@@ -14,6 +14,8 @@ class geneTrack extends Track {
         ///        -> mRNA + attributes + position
         ///            -> exon + position + attributes
 
+    offsetPos = 0; ///////constant to change when offset is changed by drag
+
     trackFromGFF(gff) {
         var genes = {};
         function doSplit(array) {
@@ -27,6 +29,7 @@ class geneTrack extends Track {
         }
 
         var att, type, start, end, score, strand, phase, gene, chrom, mRNA, exon, currmRNA, currgene, chromNames = [];
+        
 
         for (var i = 0; i < gff.length; i++) {        /////////Real one use below for testing purposes 
         //for (var i = 0; i < 10; i++) {
@@ -49,13 +52,18 @@ class geneTrack extends Track {
                 if (genes[chrom][gene] === undefined) {        //////////if nothing in gene level then make it an asso array
                     genes[chrom][gene] = {};
                 }
+                if (genes[chrom]["geneList"] === undefined) {        //////////if nothing in gene level then make it an asso array
+                    genes[chrom]["geneList"] = [];
+                }
                 genes[chrom][gene]["gene_attributes"] = att;   /////////save into gene attributes at second level of track
                 currgene = gene;
+                genes[chrom][gene]["ID"] = gene;
                 genes[chrom][gene]["start"] = start;
                 genes[chrom][gene]["end"] = end;
                 genes[chrom][gene]["score"] = score;            /////not sure if  ever use but keep it in anyway I guess?
                 genes[chrom][gene]["strand"] = strand;          /////only defining in gene to save data since gene dir is mrna and exon dir
-
+                //console.log(chrom, ' : ', genes[chrom][gene]["start"], ' : ', gene);
+                //genes[chrom]["numGenes"]++;
             }
 
             if (type == "mRNA") {
@@ -102,6 +110,8 @@ class geneTrack extends Track {
             if (type == "CDS") { ////////////define at a later date, doesn't even matter since no sequence to go off of
                 //genes[chrom][gene]["phase"] = phase;      //////phase is only really ever used in CDS
             }
+
+            
         }
         genes['chromNames'] = chromNames;
         this.genes = genes;
@@ -122,13 +132,14 @@ class geneTrack extends Track {
         var startNumPosx = relativeBoxx + trackWidth * 0.1;  //////////draw numbers right outside of base box
         var startLinePosx = relativeBoxx - trackWidth * 0.1;
         var newLength = trackRange.end - trackRange.start;
-
+        var chromHeight = (chromLength / newLength) * trackLength;
+        //////////console.log(trackRange.start, ' : ', trackRange.end);
         function shortNum(num,resolution) {        ////////small function to abbr the number
             var tmp;
             
             if (num / 1000000 > 1 & resolution > 1000000) { tmp = (Math.floor(num / 100000) / 10) + ' Mb'; } else if (num / 1000 > 1 & resolution > 1000) { tmp = (Math.floor(num / 100) / 10) + ' Kb'; } else { tmp = num; }
             ///////////divide by 10 times less then divide by 10 again
-            console.log(tmp);
+            
             return tmp;
         };
 
@@ -165,14 +176,22 @@ class geneTrack extends Track {
         } else if (newLength == 100) {
             baseDiv = 100;
         } 
-
+        /////////////////////////////////////////////////////////////////////////
+        ////////////////Draw the boxes that the bases will go in ////////////////
+        /////////////////////////////////////////////////////////////////////////
         var baseboxWidth = trackWidth * 0.02; //////basebox width is 0.05 of the trackwidth, maybe make it get bigger with zoom to fit more overlapping genes
         var divHeight = trackLength * (1 / baseDiv);
+        var divNum = chromHeight / divHeight;
+        var offset = divNum / (trackRange.start/chromLength) % 1; ///////this offset is basically the number of divs to move with modulo to make it proportion of divs
+        this.offsetPos = (offset - 1) + 1 % 1; ////(((this.offsetPos + (offset * trackRange.offset)) - 1) + 1) % 1; //////wraps 0 and 1 //provides backwards modulus
         var startBaseboxx = relativeBoxx - baseboxWidth / 2;
-        var startBaseboxy = relativeBoxy - (trackLength / 2) - divHeight + (divHeight * -(trackRange.offset));////start -1 box up and add the box worth of  offset
-        
+        var startBaseboxy = relativeBoxy - (trackLength / 2) + (divHeight * this.offsetPos);////start -1 box up and add the box worth of  offset
+        //* this.offsetPos
+        //if (chrom == "IV") { console.log(this.offsetPos, ' : ', offset) ; }
+
         for (var i = 0; i < baseDiv + 2; i++) {     ////////+ 2 because we will be using a drag function that will require an extra div box on bottom and on top to make it appear as if it is moving
             baseStart = Math.max(startNumPosy,Math.min(endNumPosy, startBaseboxy + (divHeight * i)));    ////////limit start to start num Posy and end to endNumPosy
+
             if (baseStart + divHeight > endNumPosy) {   ///////////////////cases for when to stop or start panning track
                 baseHeight = endNumPosy - baseStart;
             } else {
@@ -182,13 +201,20 @@ class geneTrack extends Track {
                     } else { baseHeight = (startBaseboxy + (divHeight * (i + 1))) - startNumPosy ; }
                 } else { baseHeight = divHeight; }
             }
+            //baseStart = Math.min(endNumPosy, startBaseboxy + (divHeight * i));
+            //baseHeight = divHeight; ////////testing box pos
             ctx.strokeRect(startBaseboxx, baseStart, baseboxWidth, baseHeight);
             
         }
-        /////////////draw the positions of 5 ticks to better gauge lengths on tracks
+        //////////////////////////////////////////////////////////////////////////////////
+        /////////////draw the positions of 5 ticks to better gauge lengths on tracks//////
+        //////////////////////////////////////////////////////////////////////////////////
         var tickLength = trackLength / 6;
+        var numTicks = 5 * (chromLength / newLength);
+        var tickoffset = numTicks / (trackRange.start / chromLength) % 1;
+        var tickStarty = relativeBoxy - (trackLength / 2) + tickLength * ((offset - 1) + 1 % 1);
         for (var i = 0; i < 7; i++) {
-            var tickPosy = startNumPosy + (tickLength * i) - (tickLength * trackRange.offset);
+            var tickPosy = tickStarty + (tickLength * i);
             var tickNum = Math.floor(trackRange.start + (newLength / 5) * i);
             if (i % 2 == 0) {
                 var tickStart = relativeBoxx - trackWidth * 0.075;
@@ -204,7 +230,39 @@ class geneTrack extends Track {
                 ctx.stroke();
             }
         }
-        ////if (chrom == "IV") { console.log(baseStart + divHeight, ' : ', endNumPosy); }
+        //if (chrom == "IV") { console.log(trackRange.offset); }
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////Draw the genes//////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        //if (chrom == "IV") { console.log(this.genes[chrom]["numGenes"]); }
+        ctx.fillStyle = "#ff0000";
+        var extTrackstarty = startNumPosy - trackLength * 0.15;
+        var extTrackendy = startNumPosy + trackLength * 0.15;
+        var t = 0;
+        var padding = trackWidth * 0.03;
+        var geneWidth = trackWidth * 0.08;
+        for (var gene in this.genes[chrom]) {
+            if (this.genes[chrom].hasOwnProperty(gene)) {
+                var strand = this.genes[chrom][gene]["strand"];
+                var geneRatio = ((this.genes[chrom][gene]["end"] - this.genes[chrom][gene]["start"]) / newLength);
+                var geneStartRatio = ((this.genes[chrom][gene]["start"] - trackRange.start) / newLength);
+                var geneHeight = trackLength * geneRatio;//geneEndy - geneStarty;
+                var geneStarty = startNumPosy + trackLength * geneStartRatio;///// y start place
+                var geneEndy = geneStarty + geneHeight;
+                if (geneStarty < startNumPosy && geneEndy < startNumPosy || geneStarty > endNumPosy && geneEndy > endNumPosy) { } else {//////if out of bounds don't render 
+                    if (geneStarty < startNumPosy) { geneStarty = startNumPosy; }
+                    if (geneEndy > endNumPosy) { geneEndy = endNumPosy; }
+                    geneHeight = geneEndy - geneStarty;
+                    ctx.fillRect(startLinePosx - ((geneWidth + padding) * t), geneStarty, geneWidth , geneHeight);
+                    
+                }
+                t++;
+                t = t % 4;
+                ///ctx.fillRect(startLinePosx, geneStarty, trackWidth * 0.1, geneHeight);
+
+                //console.log(chrom, ' : ', this.genes[chrom][gene]["start"], ' : ', this.genes[chrom][gene]["ID"]);
+            }
+        }
 
         ctx.lineWidth = 0.5;
         ctx.globalAlpha = 1;

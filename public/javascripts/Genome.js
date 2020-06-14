@@ -139,6 +139,7 @@ class Chromosome {
     highlight = false;
     scale = 1;
     dragging = false; ////for now not use but kinda annoying when you drag off chrom and it jumps
+    dragDir = 0;
 
     ///////////////////////Check function to see if over bounding box
     check(mousex,mousey,windowOrigin) {
@@ -209,22 +210,24 @@ class Chromosome {
 
     dragRange(dragY) {
         var newLength = this.trackRange.end - this.trackRange.start;
-        var sizeRatio = (newLength / (this.chromRange.end - this.chromRange.start));
-        var speed = 10000 * sizeRatio;////newLength / 10; /////the speed at which we pan  ///////we want it to go slower while less zoomed and faster while more
-        var dragDir = dragY < 0 ? 1 : -1; ///////make negative so that drag goes opposite way
+        var sizeRatio = (Math.abs(dragY)/(this.boxWindow.height * 0.9));
+        var speed = newLength * sizeRatio;////newLength / 10; /////the speed at which we pan  ///////we want it to go slower while less zoomed and faster while more
+        //var dragDir;// = -(dragY > 0 ? 1 : -1); ///////make negative so that drag goes opposite way
+        if (dragY < 0) { this.dragDir = 1; } else if (dragY > 0) { this.dragDir = -1; } ///else if (dragY == 0) { dragDir = 0; }
+        ////////made dragdir a this object to avoid awkward 0's while dragging
+        var newEnd = Math.floor(this.trackRange.end + speed * this.dragDir );///speed * dragDir); /////////- to make pan up drag down
+        var newStart = Math.floor(this.trackRange.start + speed * this.dragDir);///speed * dragDir);
         
-        var newEnd = Math.floor(this.trackRange.end + speed * dragDir);
-        var newStart = Math.floor(this.trackRange.start + speed * dragDir);
-
         //////////keep a space between the start and end
         this.trackRange.start = Math.min(this.chromRange.end - newLength,Math.max(0, newStart));      ///////////////////we cant stop from scrolling when we reach 0 or the end
         this.trackRange.end = Math.max(this.chromRange.start + newLength, Math.min(this.chromRange.end, newEnd));
+        //console.log(dragY, ' ; ', speed, ' : ', dragDir, ' : ', newEnd, ' : ', newStart, ' : ', this.trackRange.start);
         ///////Now do the offset in increments of 0.2
-        this.trackRange.offset += (0.2 * dragDir);
+        this.trackRange.offset = this.dragDir;//+= ;////move * speed;///(0.2 * dragDir);
         if (this.trackRange.offset < -1) { this.trackRange.offset = 0; }
         if (this.trackRange.offset > 1) { this.trackRange.offset = 0; }
-        if (this.trackRange.start == 0 & dragDir == -1) { this.trackRange.offset = 0; }
-        if (this.trackRange.end == this.chromRange.end & dragDir == 1) { this.trackRange.offset = 0; }
+        if (this.trackRange.start == 0 & this.dragDir == -1) { this.trackRange.offset = 0; }
+        if (this.trackRange.end == this.chromRange.end & this.dragDir == 1) { this.trackRange.offset = 0; }
         
         ////console.log(this.trackRange.offset);
     }

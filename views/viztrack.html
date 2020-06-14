@@ -202,6 +202,7 @@
                 if (hover) {
                     startDrag.x = evt.clientX;
                     startDrag.y = evt.clientY;
+                    startPos.y = evt.clientY - canvas.offsetTop;
                 }
             });
 
@@ -227,10 +228,10 @@
                     hover.highlightOn();
                     oldhover = hover;
                     if (mouseDown) {
-                        var dragy = (evt.clientY - startDrag.y); /////////now working up and down
+                        var dragy = (evt.clientY - canvas.offsetTop - startPos.y);///(evt.clientY - startDrag.y); /////////now working up and down
                         hover.dragRange(dragy);
-                        startDrag.x = evt.clientX;
-                        startDrag.y = evt.clientY;
+                        draw(scale, translatePos);
+                        startPos.y = evt.clientY - canvas.offsetTop;
                     }
                     draw(scale, translatePos); ///////////draw call after hover
                 } else {
