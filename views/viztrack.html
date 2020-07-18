@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿﻿
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -43,8 +44,15 @@
             width: 30px;
             margin: 0px 0px 2px 0px;
         }
+
+        #menu {
+            overflow-y: scroll;
+            overflow-x: hidden;
+        }
+
     </style>
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js"></script>
+    <script src="/javascripts/Renderjson.js"></script>
     <script src="/javascripts/Ideogram.js"></script>
     <script src="/javascripts/Tracks.js"></script>
     <script src="/javascripts/Genome.js"></script>
@@ -54,7 +62,7 @@
         /////////////////test global variables///////////////////////
         //var genome1 = new Genome(30);         /////test larger sized genomes
         var genome2 = new Genome();
-        
+
         //////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////
@@ -73,7 +81,7 @@
             mousex = event.clientX;
             mousey = event.clientY;
             var check = false;
-            
+
             for (i = 0; i < chromlist.length; i++) {
                 check = chromlist[i].check(mousex, mousey, windowOrigin);
                 if (check) { return chromlist[i]; }
@@ -90,13 +98,13 @@
                 chromlist[i].highlightOff();
                 check = chromlist[i].check(mousex, mousey, windowOrigin);
                 if (check) { return chromlist[i]; }
-                
+
             }
 
             return null;
         }
 
-        function updateAll(chromlist, movePos = { x: 0, y: 0 },  zoom = 1) {
+        function updateAll(chromlist, movePos = { x: 0, y: 0 }, zoom = 1) {
             for (i = 0; i < chromlist.length; i++) {
                 chromlist[i].update(movePos.x, movePos.y, zoom);
             }
@@ -190,9 +198,9 @@
                 mouseDown = true;
                 startDragOffset.x = evt.clientX - translatePos.x;
                 startDragOffset.y = evt.clientY - translatePos.y;
-                
+
                 /////For now we will disable chroms as grabbable objects because it would be annoying to grab when you really want to pan to another chromosome
-                ///grabbed = whichGrabbed(genome2.chromosomes, translatePos); 
+                ///grabbed = whichGrabbed(genome2.chromosomes, translatePos);
                 if (grabbed) { //////////checks if mouse down over a chromosome
                     elementGrabbed = true;
                     grabbed.highlightOn();
@@ -241,11 +249,11 @@
                         draw(scale, translatePos); ///////////draw call after hover
                     }
                 }
-                if (mouseDown & !elementGrabbed & !hover ) {
+                if (mouseDown & !elementGrabbed & !hover) {
                     translatePos.x = (evt.clientX - startDragOffset.x);
                     translatePos.y = (evt.clientY - startDragOffset.y);
                     draw(scale, translatePos);
-                } else if (mouseDown & elementGrabbed & !hover ) {
+                } else if (mouseDown & elementGrabbed & !hover) {
                     movePos.x = (evt.clientX - canvas.offsetLeft - startPos.x);
                     movePos.y = (evt.clientY - canvas.offsetTop - startPos.y);
                     updateGrabbed(grabbed, movePos);
@@ -259,6 +267,11 @@
                 //    draw(scale, translatePos);
                 //}
             });
+            /////////looks bland, will need tabs for each genome and will need to add gene tracks to a global object MR 7/18
+            document.getElementById("menu").appendChild(
+                renderjson(genome2.tracks[0].genes)
+            );
+            
 
             //////////////////  draw call that is called at the begining
             draw(scale, translatePos);/////////Initial draw call
@@ -267,20 +280,27 @@
     </script>
 
     <script>
-    ////////Apparently the jQuery has to be in its own script or does not work
+        ////////Apparently the jQuery has to be in its own script or does not work
         jQuery(document).ready(function () {  ////////updates the "status" with mouse x,y pos
             $("#wrapper").mousemove(function (e) {
                 $('#status').html(e.pageX + ', ' + e.pageY);
             });
-        })
+            var canvas = document.getElementById("myCanvas");
+            canvas.width = $("#wrapper").width();
+            canvas.height = $("#wrapper").height();
+            })
     </script>
 
 </head>
 <body onmousedown="return false;">
     Viztrack V0.1.0
-    <div id="wrapper">
-        <canvas id="myCanvas" width="800" height="800"></canvas>
-        <div id="draggableElement"></div>
+    <div style="width: 100%;">
+        <div id="wrapper" style="width: 75%; height: 100%; float: left; background: green;">
+            <canvas id="myCanvas" width="800" height="800"></canvas>
+        </div>
+        <div id="menu" style="margin-left: 25%; height: 100%; background: LightGray;">
+
+        </div>
     </div>
     <h2 id="status">
         0, 0
@@ -288,5 +308,3 @@
 
 </body>
 </html>
-
-

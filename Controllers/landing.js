@@ -1,4 +1,4 @@
-
+const path = require('path');
 
 /////////Handler for rendering the landing page
 exports.get_landing = function (req, res) {
@@ -14,5 +14,6 @@ exports.redirect_viztrack = function (req, res) {
 exports.get_viztrack = function (req, res) {
     //res.render('viztrack', { title: 'Viztrack' });
     console.log("redirecting");
-    res.sendFile( 'C:/dev/Viztrack/Viztrack/views/viztrack.html');
+    res.sendFile(path.join(__dirname, '../views', 'viztrack.html')); /////this makes the send file relative so that anyone can use it
+    //res.sendFile( 'C:/dev/Viztrack/Viztrack/views/viztrack.html');
 }

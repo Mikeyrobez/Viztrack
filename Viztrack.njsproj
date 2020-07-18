@@ -60,6 +60,9 @@
     <Content Include="public\javascripts\InteractiveWindow.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="public\javascripts\Renderjson.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="public\javascripts\Tracks.js">
       <SubType>Code</SubType>
     </Content>
