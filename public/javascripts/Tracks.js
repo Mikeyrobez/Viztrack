@@ -133,104 +133,7 @@ class geneTrack extends Track {
         var startLinePosx = relativeBoxx - trackWidth * 0.1;
         var newLength = trackRange.end - trackRange.start;
         var chromHeight = (chromLength / newLength) * trackLength;
-        //////////console.log(trackRange.start, ' : ', trackRange.end);
-        function shortNum(num,resolution) {        ////////small function to abbr the number
-            var tmp;
-            
-            if (num / 1000000 > 1 & resolution > 1000000) { tmp = (Math.floor(num / 100000) / 10) + ' Mb'; } else if (num / 1000 > 1 & resolution > 1000) { tmp = (Math.floor(num / 100) / 10) + ' Kb'; } else { tmp = num; }
-            ///////////divide by 10 times less then divide by 10 again
-            
-            return tmp;
-        };
-
-        ctx.beginPath();
-        ctx.globalAlpha = Math.min(1, Math.max(0, 1 - (1 / scale)));
-        ctx.fillStyle = '#000';
-        ctx.lineWidth = 0.5;
-        //////////////////////////////Add number annotations of position on chrom
-        ctx.moveTo(startLinePosx, startNumPosy);
-        ctx.lineTo(startNumPosx, startNumPosy);   /////////top line
-        ctx.stroke();
-
-        ctx.moveTo(startLinePosx, endNumPosy);
-        ctx.lineTo(startNumPosx, endNumPosy);   /////////bottom line
-        ctx.stroke();
-
-        ctx.font = "10px Arial";
-        ctx.fillText(shortNum(trackRange.start,newLength), startNumPosx, startNumPosy); ////////write start number at top of track
         
-        ctx.fillText(shortNum(trackRange.end,newLength), startNumPosx, endNumPosy); ////////write end range number at bottom of track
-        //////////////////////////////
-        ;///var newLength = trackRange.end - trackRange.start;      /////for now we have it being 100 base boxes but it doesn't feel like it zooms all the way down mayber fix
-        //var zoomedRatio = Math.min(100, Math.max(2, 100 - Math.floor((newLength / chromLength) * 100)));
-        var baseDiv,baseRatio,baseStart,baseHeight;        ////////////////
-        if (newLength > 100000) {
-            baseRatio = newLength / (chromLength - 100000);
-            baseDiv = Math.max(1,5 - (4 * baseRatio)); //////////5 to 1  ///////max should prevent funky stuff
-        } else if (newLength > 10000 & newLength < 100000) {
-            baseRatio = newLength / (100000 - 10000);
-            baseDiv = 10 - (5 * baseRatio); /////////10 to 5
-        } else if (newLength > 100 & newLength < 10000) {
-            baseRatio = newLength / (10000 - 1000);
-            baseDiv = 100 - (90 * baseRatio); /////100 to 10
-        } else if (newLength == 100) {
-            baseDiv = 100;
-        } 
-        /////////////////////////////////////////////////////////////////////////
-        ////////////////Draw the boxes that the bases will go in ////////////////
-        /////////////////////////////////////////////////////////////////////////
-        var baseboxWidth = trackWidth * 0.02; //////basebox width is 0.05 of the trackwidth, maybe make it get bigger with zoom to fit more overlapping genes
-        var divHeight = trackLength * (1 / baseDiv);
-        var divNum = chromHeight / divHeight;
-        var offset = divNum / (trackRange.start/chromLength) % 1; ///////this offset is basically the number of divs to move with modulo to make it proportion of divs
-        this.offsetPos = (offset - 1) + 1 % 1; ////(((this.offsetPos + (offset * trackRange.offset)) - 1) + 1) % 1; //////wraps 0 and 1 //provides backwards modulus
-        var startBaseboxx = relativeBoxx - baseboxWidth / 2;
-        var startBaseboxy = relativeBoxy - (trackLength / 2) + (divHeight * this.offsetPos);////start -1 box up and add the box worth of  offset
-        //* this.offsetPos
-        //if (chrom == "IV") { console.log(this.offsetPos, ' : ', offset) ; }
-
-        for (var i = 0; i < baseDiv + 2; i++) {     ////////+ 2 because we will be using a drag function that will require an extra div box on bottom and on top to make it appear as if it is moving
-            baseStart = Math.max(startNumPosy,Math.min(endNumPosy, startBaseboxy + (divHeight * i)));    ////////limit start to start num Posy and end to endNumPosy
-
-            if (baseStart + divHeight > endNumPosy) {   ///////////////////cases for when to stop or start panning track
-                baseHeight = endNumPosy - baseStart;
-            } else {
-                if (startBaseboxy + (divHeight * i) < startNumPosy) {
-                    if (startBaseboxy + (divHeight * i) + divHeight < startNumPosy) {
-                        baseHeight = 0;
-                    } else { baseHeight = (startBaseboxy + (divHeight * (i + 1))) - startNumPosy ; }
-                } else { baseHeight = divHeight; }
-            }
-            //baseStart = Math.min(endNumPosy, startBaseboxy + (divHeight * i));
-            //baseHeight = divHeight; ////////testing box pos
-            ctx.strokeRect(startBaseboxx, baseStart, baseboxWidth, baseHeight);
-            
-        }
-        //////////////////////////////////////////////////////////////////////////////////
-        /////////////draw the positions of 5 ticks to better gauge lengths on tracks//////
-        //////////////////////////////////////////////////////////////////////////////////
-        var tickLength = trackLength / 6;
-        var numTicks = 5 * (chromLength / newLength);
-        var tickoffset = numTicks / (trackRange.start / chromLength) % 1;
-        var tickStarty = relativeBoxy - (trackLength / 2) + tickLength * ((offset - 1) + 1 % 1);
-        for (var i = 0; i < 7; i++) {
-            var tickPosy = tickStarty + (tickLength * i);
-            var tickNum = Math.floor(trackRange.start + (newLength / 5) * i);
-            if (i % 2 == 0) {
-                var tickStart = relativeBoxx - trackWidth * 0.075;
-                var tickEnd = relativeBoxx + trackWidth * 0.075;
-            } else {
-                var tickStart = relativeBoxx - trackWidth * 0.05;
-                var tickEnd = relativeBoxx + trackWidth * 0.05;
-            }
-            if (tickPosy <= startNumPosy || tickPosy >= endNumPosy) { } else {
-                ctx.fillText(shortNum(tickNum, newLength), startNumPosx, tickPosy);
-                ctx.moveTo(tickStart, tickPosy);
-                ctx.lineTo(tickEnd, tickPosy);
-                ctx.stroke();
-            }
-        }
-        //if (chrom == "IV") { console.log(trackRange.offset); }
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////Draw the genes//////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
@@ -257,10 +160,7 @@ class geneTrack extends Track {
                     
                 }
                 t++;
-                t = t % 4;
-                ///ctx.fillRect(startLinePosx, geneStarty, trackWidth * 0.1, geneHeight);
-
-                //console.log(chrom, ' : ', this.genes[chrom][gene]["start"], ' : ', this.genes[chrom][gene]["ID"]);
+                t = t % 4; /////////staggers and jitters genes so hopefully no overlap //////will need to make adjustable if they have overlapping
             }
         }
 

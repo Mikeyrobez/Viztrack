@@ -101,6 +101,118 @@ class Genome {
         this.tracks.push(geneTrack);
     }
 
+    drawGenomeTrack(boxWindow, trackRange, windowOrigin, scale, chromLength) {
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+        //////for trackPos add or subtrack it * the trackwidth + padding from the windoworigin + boxwindow.x
+        var trackDir = 0;////unnecessary for genome track but whatevs
+        //if (trackPos == 0) { trackDir = 0; } else { trackDir = trackPos < 0 ? 1 : -1; } ////////get the direction of padding
+        var trackWidth = (boxWindow.width / 8);
+        var trackLength = (boxWindow.height * 0.9);
+        var relativeBoxy = windowOrigin.y + boxWindow.y; ////////so we dont have to add the windowOrigin each time
+        var relativeBoxx = windowOrigin.x + boxWindow.x + (trackWidth * 0) + (trackWidth * 0.1 * trackDir);  //////////trackPos will change the relative x position to be centered on the track
+        var startNumPosy = relativeBoxy - trackLength / 2; //////////the top of base box
+        var endNumPosy = relativeBoxy + trackLength / 2;   /////////bottom of base box
+        var startNumPosx = relativeBoxx + trackWidth * 0.1;  /////////draw numbers right outside of base box
+        var startLinePosx = relativeBoxx - trackWidth * 0.1;
+        var newLength = trackRange.end - trackRange.start;
+        var chromHeight = (chromLength / newLength) * trackLength;
+        function shortNum(num, resolution) {        ////////small function to abbr the number
+            var tmp;
+            if (num / 1000000 > 1 & resolution > 1000000) { tmp = (Math.floor(num / 100000) / 10) + ' Mb'; } else if (num / 1000 > 1 & resolution > 1000) { tmp = (Math.floor(num / 100) / 10) + ' Kb'; } else { tmp = num; }
+            ///////////divide by 10 times less then divide by 10 again
+            return tmp;
+        };
+        ///////////////////////////////////////////
+        //////Add lines and top and bottom ticks////
+        /////////////////////////////////////////////
+        ctx.beginPath();
+        ctx.globalAlpha = Math.min(1, Math.max(0, 1 - (1 / scale)));
+        ctx.fillStyle = '#000';
+        ctx.lineWidth = 0.5;
+        //////////////////////////////Add number annotations of position on chrom
+        ctx.moveTo(startLinePosx, startNumPosy);
+        ctx.lineTo(startNumPosx, startNumPosy);   /////////top line
+        ctx.stroke();
+        /////////////////
+        ctx.moveTo(startLinePosx, endNumPosy);
+        ctx.lineTo(startNumPosx, endNumPosy);   /////////bottom line
+        ctx.stroke();
+        /////////////////
+        ctx.font = "10px Arial";
+        ctx.fillText(shortNum(trackRange.start, newLength), startNumPosx, startNumPosy); ////////write start number at top of track
+        ctx.fillText(shortNum(trackRange.end, newLength), startNumPosx, endNumPosy); ////////write end range number at bottom of track
+        //////////////////////////////
+        var baseDiv, baseRatio, baseStart, baseHeight;        ////////////////
+        if (newLength > 100000) {
+            baseRatio = newLength / (chromLength - 100000);
+            baseDiv = Math.max(1, 5 - (4 * baseRatio)); //////////5 to 1  ///////max should prevent funky stuff
+        } else if (newLength > 10000 & newLength < 100000) {
+            baseRatio = newLength / (100000 - 10000);
+            baseDiv = 10 - (5 * baseRatio); /////////10 to 5
+        } else if (newLength > 100 & newLength < 10000) {
+            baseRatio = newLength / (10000 - 1000);
+            baseDiv = 100 - (90 * baseRatio); /////100 to 10
+        } else if (newLength == 100) {
+            baseDiv = 100;
+        }
+        /////////////////////////////////////////////////////////////////////////
+        ////////////////Draw the boxes that the bases will go in ////////////////
+        /////////////////////////////////////////////////////////////////////////
+        var baseboxWidth = trackWidth * 0.02; //////basebox width is 0.05 of the trackwidth, maybe make it get bigger with zoom to fit more overlapping genes
+        var startBaseboxx = relativeBoxx - baseboxWidth / 2;
+        var divLength = newLength / baseDiv;
+        var divHeight = trackLength / baseDiv;
+        var firstBase = Math.floor(trackRange.start / divLength);
+        for (var i = 0; i < (baseDiv + 1); i++) {
+            var baseRatio = (((firstBase + i) * divLength) - trackRange.start) / newLength;
+            var baseStart = startNumPosy + trackLength * baseRatio;
+            ///////////////////cases for adjusting basebox for panning
+            if (baseStart + divHeight > endNumPosy) {   /////////case 1: baseStart is above the end num posy but ends below
+                baseHeight = endNumPosy - baseStart;
+            } else {
+                if (baseStart < startNumPosy) {
+                    if (baseStart + divHeight < startNumPosy) { ////////case 2: baseStart begins and ends before startNumPosy
+                        baseHeight = 0;
+                    } else { baseHeight = baseStart + divHeight - startNumPosy; }  ////////case 3: starts before but ends inside
+                } else { baseHeight = divHeight; } //////basebox height equals divheight
+            }
+            if (baseStart > endNumPosy) {   //////////case 3: baseStart is below endPosNumy
+                baseStart = endNumPosy;
+                baseHeight = 0;
+            }
+            baseStart = Math.max(startNumPosy, Math.min(endNumPosy, baseStart));/////////restricts baseStart to start and end numPosy
+            ctx.strokeRect(startBaseboxx, baseStart, baseboxWidth, baseHeight);
+        }
+        //////////////////////////////////////////////////////////////////////////////////
+        /////////////draw the positions of 5 ticks to better gauge lengths on tracks//////
+        //////////////////////////////////////////////////////////////////////////////////
+        var tickLength = newLength / 5;
+        var firstTick = Math.floor(trackRange.start / tickLength);
+        for (var i = 0; i < 7; i++) {
+            var tickRatio = (((firstTick + i) * tickLength) - trackRange.start) / newLength; ///////like geneRatio, it calculates the percentage of the way for current tick
+            var tickNum = Math.trunc(trackRange.start + (tickRatio * newLength));   //////calculates new tick number and truncates for no decials
+            var tickPosy = startNumPosy + trackLength * tickRatio;
+            if (firstTick + i % 2 == 0) {           //////should alternate width of ticks but doesn't really work right now
+                var tickStart = relativeBoxx - trackWidth * 0.075;
+                var tickEnd = relativeBoxx + trackWidth * 0.075;
+            } else {
+                var tickStart = relativeBoxx - trackWidth * 0.05;
+                var tickEnd = relativeBoxx + trackWidth * 0.05;
+            }
+            if (tickPosy < startNumPosy) {
+            } else if (tickPosy > endNumPosy) {
+
+            } else {
+                ctx.fillText(shortNum(tickNum, newLength), startNumPosx, tickPosy);
+                ctx.moveTo(tickStart, tickPosy);
+                ctx.lineTo(tickEnd, tickPosy);
+                ctx.stroke();
+            }
+
+        }
+    }
+
 
     drawGenome(scale,windowOrigin) {
         var chromName, trackName,boxWindow,trackPos,trackRange;
@@ -109,6 +221,7 @@ class Genome {
             boxWindow = this.chromosomes[i].boxWindow;
             trackRange = this.chromosomes[i].trackRange;
             this.chromosomes[i].drawChromosome(scale, windowOrigin, this.defaultcentPos, this.trackPos[this.chromNames[i]]);
+            this.drawGenomeTrack(boxWindow, trackRange, windowOrigin, scale, this.chromLengths[i]);
             for (var x = 0; x < this.tracks.length; x++) {
                 trackPos = this.trackPos[chromName][x];
                 trackName = this.trackMap[x][chromName];

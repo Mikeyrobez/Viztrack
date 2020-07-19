@@ -21,34 +21,24 @@
             padding: 0px;
         }
 
+        #vizbox {
+            position: absolute;
+        }
+
         #wrapper {
             position: relative;
             border: 1px solid #9C9898;
-            width: 800px;
-            height: 800px;
-        }
-
-        #buttonWrapper {
-            position: absolute;
-            width: 30px;
-            top: 2px;
-            right: 2px;
         }
 
         #draggableElement {
             position: absolute;
         }
 
-        input[type = "button"] {
-            padding: 5px;
-            width: 30px;
-            margin: 0px 0px 2px 0px;
-        }
-
         #menu {
             overflow-y: scroll;
             overflow-x: hidden;
         }
+
 
     </style>
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js"></script>
@@ -158,12 +148,15 @@
             var elementGrabbed = false;
             var grabbed = null;
             var hover = null;
+            var holdhover = null;
             var oldhover = null;
             ///////////////////////////////////////////////////////////////
 
             //////////////////////////////////////////////////////////////////////////////////////
             ////////////////////////Window Listeners/////////////////////////////////////////////
             ////////////////////////////// add zoom button for mouse scroll///////////////////////
+            
+            //window.onscroll = function () { window.scrollTo(0,0); }; ///////this disables scrolling but makes kinda jumpy
             canvas.addEventListener("mousewheel", function (evt) {
                 var mousex = event.clientX - canvas.offsetLeft; ///////mouse pos
                 var mousey = event.clientY - canvas.offsetTop;
@@ -211,6 +204,7 @@
                     startDrag.x = evt.clientX;
                     startDrag.y = evt.clientY;
                     startPos.y = evt.clientY - canvas.offsetTop;
+                    holdhover = true;
                 }
             });
 
@@ -219,6 +213,7 @@
                 if (elementGrabbed) { grabbed.highlightOff(); }
                 elementGrabbed = false;
                 grabbed = null;
+                holdhover = false;
                 draw(scale, translatePos);
             });
 
@@ -249,11 +244,11 @@
                         draw(scale, translatePos); ///////////draw call after hover
                     }
                 }
-                if (mouseDown & !elementGrabbed & !hover) {
+                if (mouseDown & !elementGrabbed & !holdhover) {
                     translatePos.x = (evt.clientX - startDragOffset.x);
                     translatePos.y = (evt.clientY - startDragOffset.y);
                     draw(scale, translatePos);
-                } else if (mouseDown & elementGrabbed & !hover) {
+                } else if (mouseDown & elementGrabbed & !holdhover) {
                     movePos.x = (evt.clientX - canvas.offsetLeft - startPos.x);
                     movePos.y = (evt.clientY - canvas.offsetTop - startPos.y);
                     updateGrabbed(grabbed, movePos);
@@ -282,19 +277,19 @@
     <script>
         ////////Apparently the jQuery has to be in its own script or does not work
         jQuery(document).ready(function () {  ////////updates the "status" with mouse x,y pos
-            $("#wrapper").mousemove(function (e) {
-                $('#status').html(e.pageX + ', ' + e.pageY);
-            });
+            //$("#wrapper").mousemove(function (e) {            ///////this is for the little mouse pos indicator but we don't really need it
+            //    $('#status').html(e.pageX + ', ' + e.pageY);
+            //});
             var canvas = document.getElementById("myCanvas");
             canvas.width = $("#wrapper").width();
             canvas.height = $("#wrapper").height();
-            })
+        })
     </script>
 
 </head>
 <body onmousedown="return false;">
     Viztrack V0.1.0
-    <div style="width: 100%;">
+    <div id="vizbox" style="width: 100%;height: 100%;">
         <div id="wrapper" style="width: 75%; height: 100%; float: left; background: green;">
             <canvas id="myCanvas" width="800" height="800"></canvas>
         </div>
@@ -302,9 +297,6 @@
 
         </div>
     </div>
-    <h2 id="status">
-        0, 0
-    </h2>
 
 </body>
 </html>
