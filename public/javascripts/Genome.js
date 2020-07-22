@@ -54,35 +54,120 @@ class Genome {
             this.chromosomes.push(new Chromosome(this.chromNames[i], width, height, this.chromLengths[i], { x: x, y: y }, {x: divx, y: divy})); ////push to chromosome array
             
         }
-
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    initChrom() { ///////////Need to run this if only put numChrom into constructor
+    genomeFromFasta(f,genomeWindow) {
         var canvas = document.getElementById('myCanvas');
-        var root = Math.ceil(Math.sqrt(this.numChrom));
-        var defaultLength = (canvas.height * 0.8 * (1 / root));
+        var file = readFile(f);
+        this.sequence = {};
+        ///console.log(file.responseText.slice(0,10));
+        ////It appears that slice() can return a certain number of bytes but I think that readFile already loads the entire FASTA into memory
+        ////Will just read the entire FASTA for now but when dealing with bigger FASTA I want to be able to load a small amount at a time.
+        var genomeString = file.responseText;
+        var genomeSplit = genomeString.split('>');
+        genomeSplit.shift();
+        this.chromNames = [];
+        this.mapNames = {};
+        this.chromLengths = [];
+        this.numChrom = genomeSplit.length;
+        
+        for (var i = 0; i < genomeSplit.length;i++) {
+            var name = genomeSplit[i].split("\n")[0];
+            var shortname = genomeSplit[i].split("\n")[0].split(" ")[0];
+            this.chromNames.push(shortname);
+            this.mapNames[shortname] = {};
+            this.mapNames[shortname]["sequenceName"] = name;
+            this.chromLengths.push(genomeSplit[i].split("\n").slice(1).join("").length);
+            this.sequence[name] = genomeSplit[i].split("\n").slice(1).join("");
+        }
+        //console.log(this.mapNames);
+
+        var root = Math.ceil(Math.sqrt(this.numChrom));         /////////square root for number of chroms will be used for ideo row and col number
+        var maxLength = Math.max.apply(Math, this.chromLengths);
+        var defaultLength = (genomeWindow.height * 0.8 * (1 / root));// * asymp;         ///////////height of ideo based on number of chroms
+        ////////the maxheight wille be .75 of canvas size divided by number of rows
+        /////////////////////////// set up number of ideos per row
+        
+        var xdiv = 1 / root;
+        var ydiv = 1 / root;
+
+        var x, y, xi, yi, s = -1, height, width, divx, divy;
+        //////////////////////////iterate through and create each chromosome object
+        for (var i = 0; i < this.numChrom; i++) {
+            xi = i % (1 / xdiv);                ////////We need to set everytime moves to end of row back to 0
+            if (xi == 0) { s++; }
+            yi = s;
+
+            ///////////sets left to -400//////Adds the number of divs/////////////subtract have the div/////////subtract chrom width
+            height = (this.chromLengths[i] / maxLength) * defaultLength;
+            width = height * 0.15;
+            divx = genomeWindow.x + (-(genomeWindow.width / 2)) + (genomeWindow.width * xdiv * (xi + 1)) - ((genomeWindow.width * xdiv) / 2);      ////////these are the x and y center of each division 
+            divy = genomeWindow.y + (-(genomeWindow.height / 2)) + (genomeWindow.height * ydiv * (yi + 1)) - ((genomeWindow.height * ydiv) / 2);
+            x = divx - ((height * 0.15) / 2);
+            y = divy - (height / 2);
+
+            this.chromosomes.push(new Chromosome(this.chromNames[i], width, height, this.chromLengths[i], { x: x, y: y }, { x: divx, y: divy })); ////push to chromosome array
+            
+        }
+    }
+
+    update(genomeWindow) {
+        this.chromosomes = [];
+        var root = Math.ceil(Math.sqrt(this.numChrom));         /////////square root for number of chroms will be used for ideo row and col number
+        var maxLength = Math.max.apply(Math, this.chromLengths);
+        var defaultLength = (genomeWindow.height * 0.8 * (1 / root));// * asymp;         ///////////height of ideo based on number of chroms
+        ////////the maxheight wille be .75 of canvas size divided by number of rows
+        /////////////////////////// set up number of ideos per row
 
         var xdiv = 1 / root;
         var ydiv = 1 / root;
-        var width = defaultLength * 0.15;
-        var tmpLength = 10000;
-        var x, y, xi, yi, s = - 1,divx,divy;                   ///////s is set to 1 because modulo fires right after for loop starts
+
+        var x, y, xi, yi, s = -1, height, width, divx, divy;
+        //////////////////////////iterate through and create each chromosome object
         for (var i = 0; i < this.numChrom; i++) {
             xi = i % (1 / xdiv);                ////////We need to set everytime moves to end of row back to 0
-            if (xi == 0) { s++; }               ////////this works and is more elgent I guess
-            yi = s % (1 / ydiv);
+            if (xi == 0) { s++; }
+            yi = s;
 
             ///////////sets left to -400//////Adds the number of divs/////////////subtract have the div/////////subtract chrom width
-            x = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2) - ((defaultLength * 0.15) / 2);
-            y = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2) - (defaultLength / 2); 
-            divx = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2);      ////////these are the x and y center of each division 
-            divy = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2);
+            height = (this.chromLengths[i] / maxLength) * defaultLength;
+            width = height * 0.15;
+            divx = genomeWindow.x + (-(genomeWindow.width / 2)) + (genomeWindow.width * xdiv * (xi + 1)) - ((genomeWindow.width * xdiv) / 2);      ////////these are the x and y center of each division 
+            divy = genomeWindow.y + (-(genomeWindow.height / 2)) + (genomeWindow.height * ydiv * (yi + 1)) - ((genomeWindow.height * ydiv) / 2);
+            x = divx - ((height * 0.15) / 2);
+            y = divy - (height / 2);
+            this.chromosomes.push(new Chromosome(this.chromNames[i], width, height, this.chromLengths[i], { x: x, y: y }, { x: divx, y: divy })); ////push to chromosome array
 
-            //console.log(i, ' : ', s, ' : ', x, ' : ', y, ' : ', xdiv, ' : ', ydiv, ' : ', xi, ' : ',  yi); ///////position debugger
-            this.chromosomes.push(new Chromosome(('chr' + i), width, defaultLength, tmpLength, { x: x, y: y }, { x: divx, y: divy })); ////push to chromosome array
         }
     }
+
+    /////////probably unneeded method (build x number of chrom from constructor)
+    //initChrom() { ///////////Need to run this if only put numChrom into constructor 
+    //    var canvas = document.getElementById('myCanvas');
+    //    var root = Math.ceil(Math.sqrt(this.numChrom));
+    //    var defaultLength = (canvas.height * 0.8 * (1 / root));
+
+    //    var xdiv = 1 / root;
+    //    var ydiv = 1 / root;
+    //    var width = defaultLength * 0.15;
+    //    var tmpLength = 10000;
+    //    var x, y, xi, yi, s = - 1,divx,divy;                   ///////s is set to 1 because modulo fires right after for loop starts
+    //    for (var i = 0; i < this.numChrom; i++) {
+    //        xi = i % (1 / xdiv);                ////////We need to set everytime moves to end of row back to 0
+    //        if (xi == 0) { s++; }               ////////this works and is more elgent I guess
+    //        yi = s % (1 / ydiv);
+
+    //        /////////sets left to -400//////Adds the number of divs/////////////subtract have the div/////////subtract chrom width
+    //        x = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2) - ((defaultLength * 0.15) / 2);
+    //        y = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2) - (defaultLength / 2); 
+    //        divx = (-(canvas.width / 2)) + (canvas.width * xdiv * (xi + 1)) - ((canvas.width * xdiv) / 2);      ////////these are the x and y center of each division 
+    //        divy = (-(canvas.height / 2)) + (canvas.height * ydiv * (yi + 1)) - ((canvas.height * ydiv) / 2);
+
+    //        console.log(i, ' : ', s, ' : ', x, ' : ', y, ' : ', xdiv, ' : ', ydiv, ' : ', xi, ' : ',  yi); ///////position debugger
+    //        this.chromosomes.push(new Chromosome(('chr' + i), width, defaultLength, tmpLength, { x: x, y: y }, { x: divx, y: divy })); ////push to chromosome array
+    //    }
+    //}
 
     addGeneTrackFromGFF(f) {
         var file = readFile(f);
@@ -91,13 +176,20 @@ class Genome {
         geneTrack = new geneTrack();
         geneTrack.trackFromGFF(gff);
         /////////////we will make a track map here but we need to make it editable from wihtin the application
-        this.trackMap.push({
-            chr1: "I", chr2: "II", chr3: "III", chr4: "IV",
-            chr9: "IX", mito: "Mito", chr5: "V", chr6: "VI",
-            chr7: "VII", chr8: "VIII", chr10: "X", chr11: "XI",
-            chr12: "XII", chr13: "XIII", chr14: "XIV", chr15: "XV", chr16: "XVI"
+        //this.trackMap.push({
+        //    chr1: "I", chr2: "II", chr3: "III", chr4: "IV",
+        //    chr9: "IX", mito: "Mito", chr5: "V", chr6: "VI",
+        //    chr7: "VII", chr8: "VIII", chr10: "X", chr11: "XI",
+        //    chr12: "XII", chr13: "XIII", chr14: "XIV", chr15: "XV", chr16: "XVI"
+        //});
+        this.trackMap.push({ /////////need to make this adjustable at upload or make it figure it out by itself
+            I: "I", II: "II", III: "III", IV: "IV",
+            IX: "IX", Mito: "Mito", V: "V", VI: "VI",
+            VII: "VII", VIII: "VIII", X: "X", XI: "XI",
+            XII: "XII", XIII: "XIII", XIV: "XIV", XV: "XV", XVI: "XVI"
         });
-        for (var i = 0; i < this.numChrom; i++) { this.trackPos[this.chromNames[i]] = [0]; }    /////////for now gene track will be position 0 but will eventually have a variable system 
+        //for (var i = 0; i < this.numChrom; i++) { this.trackPos[this.chromNames[i]] = [0]; }    /////////for now gene track will be position 0 but will eventually have a variable system 
+        ////probably getting rid of trackPos and making it dynamic depending on tracknumber
         this.tracks.push(geneTrack);
     }
 
@@ -107,7 +199,7 @@ class Genome {
         //////for trackPos add or subtrack it * the trackwidth + padding from the windoworigin + boxwindow.x
         var trackDir = 0;////unnecessary for genome track but whatevs
         //if (trackPos == 0) { trackDir = 0; } else { trackDir = trackPos < 0 ? 1 : -1; } ////////get the direction of padding
-        var trackWidth = (boxWindow.width / 8);
+        var trackWidth = (boxWindow.width / 8); 
         var trackLength = (boxWindow.height * 0.9);
         var relativeBoxy = windowOrigin.y + boxWindow.y; ////////so we dont have to add the windowOrigin each time
         var relativeBoxx = windowOrigin.x + boxWindow.x + (trackWidth * 0) + (trackWidth * 0.1 * trackDir);  //////////trackPos will change the relative x position to be centered on the track
@@ -159,7 +251,7 @@ class Genome {
         /////////////////////////////////////////////////////////////////////////
         ////////////////Draw the boxes that the bases will go in ////////////////
         /////////////////////////////////////////////////////////////////////////
-        var baseboxWidth = trackWidth * 0.02; //////basebox width is 0.05 of the trackwidth, maybe make it get bigger with zoom to fit more overlapping genes
+        var baseboxWidth = trackWidth * 0.04; //////basebox width is 0.05 of the trackwidth, maybe make it get bigger with zoom to fit more overlapping genes
         var startBaseboxx = relativeBoxx - baseboxWidth / 2;
         var divLength = newLength / baseDiv;
         var divHeight = trackLength / baseDiv;
@@ -211,22 +303,52 @@ class Genome {
             }
 
         }
+
+        ////////////////////////////////////////////////////////
+        /////////////Draw in bases/////////////////////////////
+        ///////////////////////////////////////////////////////
+        var baseY = startNumPosy + (divHeight / 2);
+        var baseX = startBaseboxx + (baseboxWidth * 0.75);
+        if (newLength <= 100) {
+            for (var i = 0; i < 100; i++) {
+                ctx.font = "8px Arial";
+                ctx.fillText("A", startBaseboxx, baseY); //////do a's for now but create function to grab the correct base
+                baseY += divHeight;
+            }
+        }
+        ctx.globalAlpha = 1.0;
+        ctx.closePath();
     }
 
 
-    drawGenome(scale,windowOrigin) {
-        var chromName, trackName,boxWindow,trackPos,trackRange;
+    //drawGenome(scale,windowOrigin) {
+    //    var chromName, trackName, boxWindow, trackPos, trackRange;
+    //    for (var i = 0; i < this.numChrom; i++) {
+    //        chromName = this.chromNames[i];
+    //        boxWindow = this.chromosomes[i].boxWindow;
+    //        trackRange = this.chromosomes[i].trackRange;
+    //        this.chromosomes[i].drawChromosome(scale, windowOrigin, this.defaultcentPos, this.trackPos[this.chromNames[i]]);
+    //        this.drawGenomeTrack(boxWindow, trackRange, windowOrigin, scale, this.chromLengths[i]);
+    //        for (var x = 0; x < this.tracks.length; x++) {
+    //            trackPos = this.trackPos[chromName][x];
+    //            trackName = this.trackMap[x][chromName];
+    //            this.tracks[x].drawTrack(trackName, boxWindow, trackPos,trackRange,windowOrigin,scale,this.chromLengths[i]);
+    //        }
+    //    }
+    //}
+
+    draw(scale, windowOrigin) {
+        var chromName, trackName, boxWindow, trackPos, trackRange;
         for (var i = 0; i < this.numChrom; i++) {
             chromName = this.chromNames[i];
             boxWindow = this.chromosomes[i].boxWindow;
             trackRange = this.chromosomes[i].trackRange;
-            this.chromosomes[i].drawChromosome(scale, windowOrigin, this.defaultcentPos, this.trackPos[this.chromNames[i]]);
-            this.drawGenomeTrack(boxWindow, trackRange, windowOrigin, scale, this.chromLengths[i]);
+            this.chromosomes[i].drawChromosome(scale, windowOrigin, this.defaultcentPos);
             for (var x = 0; x < this.tracks.length; x++) {
-                trackPos = this.trackPos[chromName][x];
                 trackName = this.trackMap[x][chromName];
-                this.tracks[x].drawTrack(trackName, boxWindow, trackPos,trackRange,windowOrigin,scale,this.chromLengths[i]);
+                this.tracks[x].drawTrack(trackName, boxWindow, x, trackRange, windowOrigin, scale, this.chromLengths[i]);
             }
+            this.drawGenomeTrack(boxWindow, trackRange, windowOrigin, scale, this.chromLengths[i]);
         }
     }
 
@@ -346,7 +468,7 @@ class Chromosome {
     }
 
     //////////////////////Draw function for ideogram
-    drawChromosome(scale, windowOrigin, centPos,trackPos) {
+    drawChromosome(scale, windowOrigin, centPos) {
         var canvas = document.getElementById("myCanvas");
         var ctx = canvas.getContext("2d");
         var relativePos = { x: this.xPos + windowOrigin.x, y: this.yPos + windowOrigin.y };
@@ -366,31 +488,6 @@ class Chromosome {
         ctx.strokeStyle = '#000';
         ctx.strokeRect(boxx, boxy,this.boxWindow.width,this.boxWindow.height);
         ctx.closePath();
-
-        /////////////we should draw the track windows now as well they will be of a certain size and will get more opaque with
-        var tracky = this.boxWindow.y - ((this.boxWindow.height / 2)) + windowOrigin.y;
-        var padding = 20;
-        var trackWidth = this.boxWindow.width / 8; //////////For now we just put 8 b/c it fits over chrom well, but we will have to divide it more if more tracks than 8
-        var trackHeight = this.boxWindow.height;
-        var thickness = 2; /////define thickness of track window border
-        ////////////maybe we should adapt it to more tracks than size of window allows
-        ///////////need to add lines 
-        for (var i = 0; i < trackPos.length; i++) {
-            var trackx = windowOrigin.x + this.boxWindow.x - (trackWidth / 2) + ((trackWidth + padding) * trackPos[i]);
-            ctx.beginPath();
-            ctx.globalAlpha = Math.min(1, Math.max(0,1 - (1/scale)));       /////////makes more opaque as we scale
-
-            ctx.fillStyle = '#000';
-            ctx.fillRect(trackx - thickness, tracky - thickness, trackWidth + (thickness * 2), trackHeight + (thickness * 2)); ////draw track border window
-
-            ctx.fillStyle = '#D6DBDF';//'#3333ff'; ///'#0000ff'; ///pure blue
-            ctx.fillRect(trackx, tracky, trackWidth, trackHeight); //////fill track window
-            
-            ctx.globalAlpha = 1.0;
-            ctx.closePath();
-        }
-        
-
     } 
 
 }

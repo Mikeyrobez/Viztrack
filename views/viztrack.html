@@ -43,6 +43,7 @@
     </style>
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js"></script>
     <script src="/javascripts/Renderjson.js"></script>
+    <script src="/javascripts/ObjectManager.js"></script>
     <script src="/javascripts/Ideogram.js"></script>
     <script src="/javascripts/Tracks.js"></script>
     <script src="/javascripts/Genome.js"></script>
@@ -50,9 +51,8 @@
 
     <script>
         /////////////////test global variables///////////////////////
-        //var genome1 = new Genome(30);         /////test larger sized genomes
-        var genome2 = new Genome();
-
+        var genome3 = new Genome();
+        var objects = new ObjectManager();
         //////////////////////////////////////////////////////////////
 
         ////////////////////////////////////////////////////////////
@@ -62,22 +62,23 @@
             var canvas = document.getElementById('myCanvas');
             var context = canvas.getContext('2d');
             context.clearRect(0, 0, canvas.width, canvas.height); ////////Needed to refresh the screen
-
-            //genome1.drawGenome(scale,windowOrigin);           //////the test genome
-            genome2.drawGenome(scale, windowOrigin);
+            objects.drawObjects(scale,windowOrigin);
         }
 
-        function whichHover(chromlist, windowOrigin) {
-            mousex = event.clientX;
-            mousey = event.clientY;
-            var check = false;
+        function whichHover(objects,windowOrigin) {
+            //mousex = event.clientX;
+            //mousey = event.clientY;
+            //var check = false;
 
-            for (i = 0; i < chromlist.length; i++) {
-                check = chromlist[i].check(mousex, mousey, windowOrigin);
-                if (check) { return chromlist[i]; }
-            }
+            //for (i = 0; i < chromlist.length; i++) {
+            //    check = chromlist[i].check(mousex, mousey, windowOrigin);
+            //    if (check) { return chromlist[i]; }
+            //}
 
-            return null; //////////if we are not hovering we exit with null
+            //return null; //////////if we are not hovering we exit with null
+            var mouse = { x: event.clientX, y: event.clientY };
+            return objects.whichHover(mouse, windowOrigin);
+            
         }
 
         function whichGrabbed(chromlist, windowOrigin) {
@@ -94,11 +95,11 @@
             return null;
         }
 
-        function updateAll(chromlist, movePos = { x: 0, y: 0 }, zoom = 1) {
-            for (i = 0; i < chromlist.length; i++) {
-                chromlist[i].update(movePos.x, movePos.y, zoom);
-            }
-        }
+        //function updateAll(chromlist, movePos = { x: 0, y: 0 }, zoom = 1) {
+        //    for (i = 0; i < chromlist.length; i++) {
+        //        chromlist[i].update(movePos.x, movePos.y, zoom);
+        //    }
+        //}
 
         function updateGrabbed(grabbed, movePos = { x: 0, y: 0 }, zoom = 1) {
             grabbed.update(movePos.x, movePos.y, zoom);
@@ -113,14 +114,11 @@
             ///////////////////////Window Vars/////////////////////////////////////////////
             /////////////////////////////////////////////////////////////
             var canvas = document.getElementById("myCanvas");
-            //genome1.initChrom();              /////Run if the genome is from constructor
-            genome2.genomeFromBed('/data/s_cerevisiae_genome.bed');
-
-            //var file = readFile('/data/Saccharomyces_cerevisiae.R64-1-1.100.gff3');
-            //var gff = gffToJSON(file.responseText);
-            //console.log(gff[2]["type"]);
-            genome2.addGeneTrackFromGFF('/data/Saccharomyces_cerevisiae.R64-1-1.100.gff3');  ///////read genes from gff3
-
+            objects.addGenomefromFasta('/data/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa');
+            objects.addGeneTrackfromFasta('/data/Saccharomyces_cerevisiae.R64-1-1.100.gff3');
+            //objects.addGenomefromFasta('/data/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa'); ///second genome 
+            ////////////doesn't quite work for second, overlaps the two need to adjust the sizes of the chrom boxes depending on width
+            
             //var bed = new File(['bed'], '/data/sampleGenome.bed'); /////this only works for with an input file in html
             //console.log('size=' + bed.size);
             //console.log('type=' + bed.type);
@@ -150,8 +148,6 @@
             var hover = null;
             var holdhover = null;
             var oldhover = null;
-            ///////////////////////////////////////////////////////////////
-
             //////////////////////////////////////////////////////////////////////////////////////
             ////////////////////////Window Listeners/////////////////////////////////////////////
             ////////////////////////////// add zoom button for mouse scroll///////////////////////
@@ -170,15 +166,14 @@
                     draw(scale, translatePos);
                 } else {
 
-                    if (scale - (wheel * scaleMultiplier) > 0.8) {                          //////limits zoom out to 0.8 to prevent breaking
+                    if (scale - (wheel * scaleMultiplier) > 0.6) {                          //////limits zoom out to 0.8 to prevent breaking
                         translatePos.x = mousex - ((mousex - translatePos.x) * zoom);  ///////maybe later make sticky zoom but cant get it to work now
                         translatePos.y = mousey - ((mousey - translatePos.y) * zoom);
 
                         ///////////////now update scale and draw\
 
                         scale -= (wheel * scaleMultiplier);//*= zoom;       ///////update the scale with new scaling
-                        updateAll(genome2.chromosomes, { x: 0, y: 0 }, zoom); //////////calls the update for all chroms/grabbable objects?
-
+                        objects.updateAll({ x: 0, y: 0 }, zoom);
                         draw(scale, translatePos);          ///////final draw call after zooming
 
                     }
@@ -226,7 +221,8 @@
             });
 
             canvas.addEventListener("mousemove", function (evt) {
-                hover = whichHover(genome2.chromosomes, translatePos); ////need to eventually change to check over all interactable elements or just genomes
+                
+                hover = whichHover(objects, translatePos);
                 if (hover) {        /////turns on hightlight on hover, and if no hover unhighlights
                     hover.highlightOn();
                     oldhover = hover;
@@ -264,10 +260,8 @@
             });
             /////////looks bland, will need tabs for each genome and will need to add gene tracks to a global object MR 7/18
             document.getElementById("menu").appendChild(
-                renderjson(genome2.tracks[0].genes)
+                renderjson(objects.objects[0].tracks[0].genes)
             );
-            
-
             //////////////////  draw call that is called at the begining
             draw(scale, translatePos);/////////Initial draw call
         }

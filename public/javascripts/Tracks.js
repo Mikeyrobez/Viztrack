@@ -117,12 +117,14 @@ class geneTrack extends Track {
         this.genes = genes;
     }
 
-    drawTrack(chrom, boxWindow, trackPos, trackRange,windowOrigin,scale,chromLength) {
+    drawTrack(chrom, boxWindow, trackNum, trackRange,windowOrigin,scale,chromLength) {
         var canvas = document.getElementById("myCanvas");
         var ctx = canvas.getContext("2d");
         //////for trackPos add or subtrack it * the trackwidth + padding from the windoworigin + boxwindow.x
-        var trackDir;
-        if (trackPos == 0) { trackDir = 0; } else { trackDir = trackPos < 0 ? 1 : -1; } ////////get the direction of padding
+        var trackDir,trackPos;
+        
+        if (trackNum == 0) { trackDir = 0; } else { trackDir = trackNum%2 == 0 ? 1 : -1; } ////////get the direction of padding
+        trackPos = Math.ceil(trackNum / 2) * trackDir;
         var trackWidth = (boxWindow.width / 8);
         var trackLength = (boxWindow.height * 0.9);
         var relativeBoxy = windowOrigin.y + boxWindow.y; ////////so we dont have to add the windowOrigin each time
@@ -133,7 +135,28 @@ class geneTrack extends Track {
         var startLinePosx = relativeBoxx - trackWidth * 0.1;
         var newLength = trackRange.end - trackRange.start;
         var chromHeight = (chromLength / newLength) * trackLength;
-        
+
+        ///////////////////////////////////////////////////////////////////////////////////
+        ///////////////Draw the track background///////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////
+        /////////////we should draw the track windows now as well they will be of a certain size and will get more opaque with
+        var tracky = boxWindow.y - ((boxWindow.height / 2)) + windowOrigin.y;
+        var padding = 20;
+        var trackHeight = boxWindow.height;
+        var thickness = 2; /////define thickness of track window border
+        var trackx = windowOrigin.x + boxWindow.x - (trackWidth / 2) + ((trackWidth + padding) * trackPos);
+        ////////////maybe we should adapt it to more tracks than size of window allows
+        ///////////need to add lines 
+        ctx.beginPath();
+        ctx.globalAlpha = Math.min(1, Math.max(0, 1 - (1 / scale)));       /////////makes more opaque as we scale
+        ctx.fillStyle = '#000';
+        ctx.fillRect(trackx - thickness, tracky - thickness, trackWidth + (thickness * 2), trackHeight + (thickness * 2)); ////draw track border window
+        ctx.fillStyle = '#D6DBDF';//'#3333ff'; ///'#0000ff'; ///pure blue
+        ctx.fillRect(trackx, tracky, trackWidth, trackHeight); //////fill track window
+        //ctx.globalAlpha = 1.0;
+        //ctx.closePath();
+
+
         ///////////////////////////////////////////////////////////////////////////////////
         ///////////////Draw the genes//////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////
@@ -169,3 +192,26 @@ class geneTrack extends Track {
         ctx.closePath();
     }
 }
+
+///////////////we should draw the track windows now as well they will be of a certain size and will get more opaque with
+//var tracky = this.boxWindow.y - ((this.boxWindow.height / 2)) + windowOrigin.y;
+//var padding = 20;
+//var trackWidth = this.boxWindow.width / 8; //////////For now we just put 8 b/c it fits over chrom well, but we will have to divide it more if more tracks than 8
+//var trackHeight = this.boxWindow.height;
+//var thickness = 2; /////define thickness of track window border
+//        ////////////maybe we should adapt it to more tracks than size of window allows
+//        ///////////need to add lines 
+//for (var i = 0; i < trackPos.length; i++) {
+//    var trackx = windowOrigin.x + this.boxWindow.x - (trackWidth / 2) + ((trackWidth + padding) * trackPos[i]);
+//    ctx.beginPath();
+//    ctx.globalAlpha = Math.min(1, Math.max(0, 1 - (1 / scale)));       /////////makes more opaque as we scale
+
+//    ctx.fillStyle = '#000';
+//    ctx.fillRect(trackx - thickness, tracky - thickness, trackWidth + (thickness * 2), trackHeight + (thickness * 2)); ////draw track border window
+
+//    ctx.fillStyle = '#D6DBDF';//'#3333ff'; ///'#0000ff'; ///pure blue
+//    ctx.fillRect(trackx, tracky, trackWidth, trackHeight); //////fill track window
+
+//    ctx.globalAlpha = 1.0;
+//    ctx.closePath();
+//}
