@@ -10,11 +10,11 @@
     "name": ""
   },
   "dependencies": {
-    "body-parser": "^1.15.0",
+    "body-parser": "^1.20.1",
     "cookie-parser": "^1.4.0",
     "d3": "^5.16.0",
     "debug": "^2.2.0",
-    "express": "^4.14.0",
+    "express": "^4.18.2",
     "jquery-csv": "^1.0.11",
     "morgan": "^1.7.0",
     "pug": "^2.0.0-beta6",
